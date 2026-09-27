@@ -65,7 +65,7 @@ export function PrimaryAction({
   const base =
     "flex h-13 w-full items-center justify-center rounded-xl px-4 py-4 text-base font-semibold transition active:brightness-95";
   const styles = {
-    primary: "bg-primary text-primary-foreground",
+    primary: "bg-neon-gradient text-primary-foreground neon",
     accent: "bg-accent text-accent-foreground",
     ghost: "border border-border bg-surface text-foreground",
   } as const;

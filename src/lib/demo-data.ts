@@ -1,11 +1,10 @@
 // Données de démonstration — remplacées plus tard par Lovable Cloud (base + temps réel).
 
-export type Team = { id: string; nom: string; couleur: "primary" | "accent" | "success" };
-
 export type Joueur = {
   id: string;
   pseudo: string;
-  teamId: string;
+  /** nombre de personnes jouant sur ce téléphone */
+  nbParticipants: number;
   enLigne: boolean;
 };
 
@@ -32,25 +31,18 @@ export type Soiree = {
   nom: string;
   code: string;
   lieu: string;
-  teams: Team[];
   joueurs: Joueur[];
   pools: Pool[];
 };
 
-export const TEAMS: Team[] = [
-  { id: "t1", nom: "Les Vins", couleur: "primary" },
-  { id: "t2", nom: "La Scène", couleur: "accent" },
-  { id: "t3", nom: "Le Comptoir", couleur: "success" },
-];
-
 export const JOUEURS: Joueur[] = [
-  { id: "j1", pseudo: "Camille", teamId: "t1", enLigne: true },
-  { id: "j2", pseudo: "Yassine", teamId: "t2", enLigne: true },
-  { id: "j3", pseudo: "Mélissa", teamId: "t3", enLigne: true },
-  { id: "j4", pseudo: "Théo", teamId: "t1", enLigne: true },
-  { id: "j5", pseudo: "Nina", teamId: "t2", enLigne: false },
-  { id: "j6", pseudo: "Romy", teamId: "t3", enLigne: true },
-  { id: "j7", pseudo: "Sofiane", teamId: "t1", enLigne: true },
+  { id: "j1", pseudo: "Camille", nbParticipants: 1, enLigne: true },
+  { id: "j2", pseudo: "Yassine", nbParticipants: 1, enLigne: true },
+  { id: "j3", pseudo: "Mélissa & Léa", nbParticipants: 2, enLigne: true },
+  { id: "j4", pseudo: "Théo", nbParticipants: 1, enLigne: true },
+  { id: "j5", pseudo: "Nina", nbParticipants: 1, enLigne: false },
+  { id: "j6", pseudo: "Romy", nbParticipants: 1, enLigne: true },
+  { id: "j7", pseudo: "Sofiane", nbParticipants: 1, enLigne: true },
 ];
 
 function reponses(vrai: string | null, justes: number, total: number): Record<string, string> {
@@ -67,12 +59,11 @@ export const SOIREE: Soiree = {
   nom: "Afterwork du jeudi",
   code: "A7K9",
   lieu: "Le Salon M",
-  teams: TEAMS,
   joueurs: JOUEURS,
   pools: [
     {
       id: "p1",
-      nom: "Pool 1 · Les Vins",
+      nom: "Pool 1",
       statut: "termine",
       joueurIds: ["j1", "j2", "j3", "j4", "j5", "j6", "j7"],
       secrets: [
@@ -108,7 +99,7 @@ export const SOIREE: Soiree = {
     },
     {
       id: "p2",
-      nom: "Pool 2 · La Scène",
+      nom: "Pool 2",
       statut: "en_cours",
       joueurIds: ["j1", "j2", "j3", "j4", "j5", "j6", "j7"],
       secrets: [
@@ -151,7 +142,7 @@ export const SOIREE: Soiree = {
     },
     {
       id: "p3",
-      nom: "Pool 3 · Le Comptoir",
+      nom: "Pool 3",
       statut: "a_venir",
       joueurIds: ["j1", "j2", "j3", "j4", "j5", "j6", "j7"],
       secrets: [],
@@ -163,10 +154,6 @@ export const JOUEUR_COURANT = "j4";
 
 export function joueur(id: string | null | undefined): Joueur | undefined {
   return JOUEURS.find((j) => j.id === id);
-}
-
-export function team(id: string | undefined): Team | undefined {
-  return TEAMS.find((t) => t.id === id);
 }
 
 export function poolActif(): Pool {

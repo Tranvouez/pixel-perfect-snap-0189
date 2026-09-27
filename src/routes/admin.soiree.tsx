@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { SOIREE, TEAMS, joueur, statsSecret, team } from "@/lib/demo-data";
-import { Screen, TopBar, Card, PrimaryAction, TeamDot } from "@/components/app-shell";
+import { SOIREE, joueur, statsSecret } from "@/lib/demo-data";
+import { Screen, TopBar, Card, PrimaryAction } from "@/components/app-shell";
 
 export const Route = createFileRoute("/admin/soiree")({
   head: () => ({
@@ -126,21 +126,19 @@ function TableauDeBord() {
 
         {onglet === "joueurs" && (
           <div className="space-y-4">
-            {TEAMS.map((t) => (
-              <div key={t.id}>
-                <div className="flex items-center gap-2">
-                  <TeamDot couleur={t.couleur} />
-                  <p className="text-xs font-semibold">{t.nom}</p>
-                </div>
-                <div className="mt-2 space-y-2">
-                  {SOIREE.joueurs
-                    .filter((j) => j.teamId === t.id)
-                    .map((j) => (
+            <p className="eyebrow">{SOIREE.joueurs.length} téléphones · {SOIREE.joueurs.reduce((n, j) => n + j.nbParticipants, 0)} participants</p>
+            <div className="space-y-2">
+              {SOIREE.joueurs.map((j) => (
                       <Card key={j.id} className="flex items-center gap-3 py-3">
                         <span className="grid size-9 place-items-center rounded-full bg-surface-2 font-display text-sm">
                           {j.pseudo[0]}
                         </span>
                         <span className="text-sm">{j.pseudo}</span>
+                        {j.nbParticipants > 1 && (
+                          <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] text-accent">
+                            {j.nbParticipants} joueurs
+                          </span>
+                        )}
                         <span
                           className={`ml-auto text-[10px] uppercase tracking-[0.12em] ${
                             j.enLigne ? "text-success" : "text-muted-foreground"
@@ -151,8 +149,6 @@ function TableauDeBord() {
                       </Card>
                     ))}
                 </div>
-              </div>
-            ))}
           </div>
         )}
 
@@ -167,7 +163,7 @@ function TableauDeBord() {
                   <div className="mt-2 flex items-center gap-2 text-[11px]">
                     {prop ? (
                       <span className="rounded-full bg-success/15 px-2 py-0.5 text-success">
-                        {prop.pseudo} · {team(prop.teamId)?.nom}
+                        {prop.pseudo}
                       </span>
                     ) : (
                       <span className="rounded-full bg-accent/15 px-2 py-0.5 text-accent">
