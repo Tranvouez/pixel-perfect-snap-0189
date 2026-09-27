@@ -39,9 +39,7 @@ function AdminConnexion() {
 
       <div className="flex flex-1 flex-col px-5 py-8">
         <h1 className="font-display text-2xl font-semibold leading-tight">
-          Pilotez la soirée
-          <br />
-          depuis votre poche
+          Ici la voix
         </h1>
 
         <p className="mt-3 text-sm text-muted-foreground">
@@ -49,7 +47,7 @@ function AdminConnexion() {
         </p>
 
         <label className="eyebrow mt-8 block" htmlFor="code">
-          Code administrateur
+          Code la voix
         </label>
 
         <input
