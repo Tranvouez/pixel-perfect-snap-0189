@@ -1,3 +1,4 @@
+import logo from "@/assets/logo-secret-story.png.asset.json";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -9,7 +10,7 @@ export function Screen({
   className?: string;
 }) {
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh">
       <div className={`screen-shell border-x border-border/50 ${className}`}>{children}</div>
     </div>
   );
@@ -27,9 +28,7 @@ export function TopBar({ titre, retour }: { titre: string; retour?: string }) {
           ←
         </Link>
       ) : (
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary font-display text-sm text-primary-foreground">
-          S
-        </span>
+        <img src={logo.url} alt="Secret Story" className="size-9 shrink-0 rounded-lg object-cover" />
       )}
       <span className="font-display text-sm tracking-[0.08em]">{titre}</span>
     </header>
