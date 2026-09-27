@@ -1,24 +1,66 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { SOIREE } from "@/lib/demo-data";
+import { Screen, PrimaryAction } from "@/components/app-shell";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Secret Story Afterwork — Rejoindre la soirée" },
+      {
+        name: "description",
+        content:
+          "Rejoignez la soirée avec un code, associez les secrets aux personnes et suivez les révélations en direct.",
+      },
+      { property: "og:title", content: "Secret Story Afterwork" },
+      {
+        property: "og:description",
+        content: "Le jeu de secrets de vos soirées entre collègues, directement dans le navigateur.",
+      },
+    ],
+  }),
+  component: Accueil,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Accueil() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <Screen className="glow-top flex flex-col px-6 pb-10 pt-16">
+      <p className="eyebrow">Salon des secrets</p>
+      <h1 className="mt-3 font-display text-4xl font-semibold leading-[0.95]">
+        Secret
+        <br />
+        Afterwork
+      </h1>
+      <p className="mt-4 max-w-[34ch] text-sm leading-relaxed text-muted-foreground">
+        Entrez le code de la soirée pour rejoindre la table. Les secrets circulent, à vous de
+        deviner à qui ils appartiennent.
+      </p>
+
+      <div className="mt-10 flex gap-2">
+        {SOIREE.code.split("").map((c, i) => (
+          <div
+            key={i}
+            className="grid aspect-square flex-1 place-items-center rounded-xl border border-border bg-surface font-display text-3xl"
+          >
+            {c}
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Code de démonstration · {SOIREE.nom} · {SOIREE.lieu}
+      </p>
+
+      <div className="mt-8 space-y-3">
+        <PrimaryAction to="/rejoindre">Rejoindre la soirée</PrimaryAction>
+        <PrimaryAction to="/admin" variant="ghost">
+          Espace animateur
+        </PrimaryAction>
+      </div>
+
+      <div className="mt-auto pt-10 text-xs text-muted-foreground">
+        <Link to="/historique" className="underline underline-offset-4">
+          Voir l'historique de la soirée
+        </Link>
+      </div>
+    </Screen>
   );
 }

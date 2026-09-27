@@ -10,33 +10,128 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HistoriqueRouteImport } from './routes/historique'
+import { Route as JeuRouteImport } from './routes/jeu'
+import { Route as RejoindreRouteImport } from './routes/rejoindre'
+import { Route as RevelationRouteImport } from './routes/revelation'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminNouvelleSoireeRouteImport } from './routes/admin.nouvelle-soiree'
+import { Route as AdminSoireeRouteImport } from './routes/admin.soiree'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HistoriqueRoute = HistoriqueRouteImport.update({
+  id: '/historique',
+  path: '/historique',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JeuRoute = JeuRouteImport.update({
+  id: '/jeu',
+  path: '/jeu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RejoindreRoute = RejoindreRouteImport.update({
+  id: '/rejoindre',
+  path: '/rejoindre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevelationRoute = RevelationRouteImport.update({
+  id: '/revelation',
+  path: '/revelation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminNouvelleSoireeRoute = AdminNouvelleSoireeRouteImport.update({
+  id: '/admin/nouvelle-soiree',
+  path: '/admin/nouvelle-soiree',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSoireeRoute = AdminSoireeRouteImport.update({
+  id: '/admin/soiree',
+  path: '/admin/soiree',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/historique': typeof HistoriqueRoute
+  '/jeu': typeof JeuRoute
+  '/rejoindre': typeof RejoindreRoute
+  '/revelation': typeof RevelationRoute
+  '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
+  '/admin/soiree': typeof AdminSoireeRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/historique': typeof HistoriqueRoute
+  '/jeu': typeof JeuRoute
+  '/rejoindre': typeof RejoindreRoute
+  '/revelation': typeof RevelationRoute
+  '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
+  '/admin/soiree': typeof AdminSoireeRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/historique': typeof HistoriqueRoute
+  '/jeu': typeof JeuRoute
+  '/rejoindre': typeof RejoindreRoute
+  '/revelation': typeof RevelationRoute
+  '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
+  '/admin/soiree': typeof AdminSoireeRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/historique'
+    | '/jeu'
+    | '/rejoindre'
+    | '/revelation'
+    | '/admin/nouvelle-soiree'
+    | '/admin/soiree'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/historique'
+    | '/jeu'
+    | '/rejoindre'
+    | '/revelation'
+    | '/admin/nouvelle-soiree'
+    | '/admin/soiree'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/historique'
+    | '/jeu'
+    | '/rejoindre'
+    | '/revelation'
+    | '/admin/nouvelle-soiree'
+    | '/admin/soiree'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HistoriqueRoute: typeof HistoriqueRoute
+  JeuRoute: typeof JeuRoute
+  RejoindreRoute: typeof RejoindreRoute
+  RevelationRoute: typeof RevelationRoute
+  AdminNouvelleSoireeRoute: typeof AdminNouvelleSoireeRoute
+  AdminSoireeRoute: typeof AdminSoireeRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +143,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/historique': {
+      id: '/historique'
+      path: '/historique'
+      fullPath: '/historique'
+      preLoaderRoute: typeof HistoriqueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jeu': {
+      id: '/jeu'
+      path: '/jeu'
+      fullPath: '/jeu'
+      preLoaderRoute: typeof JeuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rejoindre': {
+      id: '/rejoindre'
+      path: '/rejoindre'
+      fullPath: '/rejoindre'
+      preLoaderRoute: typeof RejoindreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revelation': {
+      id: '/revelation'
+      path: '/revelation'
+      fullPath: '/revelation'
+      preLoaderRoute: typeof RevelationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/nouvelle-soiree': {
+      id: '/admin/nouvelle-soiree'
+      path: '/admin/nouvelle-soiree'
+      fullPath: '/admin/nouvelle-soiree'
+      preLoaderRoute: typeof AdminNouvelleSoireeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/soiree': {
+      id: '/admin/soiree'
+      path: '/admin/soiree'
+      fullPath: '/admin/soiree'
+      preLoaderRoute: typeof AdminSoireeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HistoriqueRoute: HistoriqueRoute,
+  JeuRoute: JeuRoute,
+  RejoindreRoute: RejoindreRoute,
+  RevelationRoute: RevelationRoute,
+  AdminNouvelleSoireeRoute: AdminNouvelleSoireeRoute,
+  AdminSoireeRoute: AdminSoireeRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
