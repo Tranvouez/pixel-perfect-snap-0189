@@ -1,5 +1,8 @@
 // Données de démonstration — remplacées plus tard par Lovable Cloud (base + temps réel).
 
+/** Valeur stockée dans `Secret.reponses` quand un joueur pense qu'un secret n'appartient à personne. */
+export const FAUX_SECRET = "__faux__";
+
 export type Joueur = {
   id: string;
   pseudo: string;
@@ -45,11 +48,12 @@ export const JOUEURS: Joueur[] = [
   { id: "j7", pseudo: "Sofiane", nbParticipants: 1, enLigne: true },
 ];
 
-function reponses(vrai: string | null, justes: number, total: number): Record<string, string> {
+function reponses(proprietaireId: string | null, justes: number, total: number): Record<string, string> {
   const out: Record<string, string> = {};
-  const autres = JOUEURS.filter((j) => j.id !== vrai);
+  const cible = proprietaireId ?? FAUX_SECRET;
+  const autres = JOUEURS.filter((j) => j.id !== proprietaireId);
   JOUEURS.slice(0, total).forEach((j, i) => {
-    out[j.id] = i < justes && vrai ? vrai : (autres[i % autres.length]?.id ?? "j1");
+    out[j.id] = i < justes ? cible : (autres[i % autres.length]?.id ?? "j1");
   });
   return out;
 }
@@ -85,7 +89,7 @@ export const SOIREE: Soiree = {
           id: "s1c",
           texte: "A tenté de soudoyer un videur avec un simple espresso.",
           proprietaireId: null,
-          reponses: reponses(null, 0, 7),
+          reponses: reponses(null, 3, 7),
           revele: true,
         },
         {
@@ -114,7 +118,7 @@ export const SOIREE: Soiree = {
           id: "s2b",
           texte: "Le mensonge du jeudi : porte la même montre depuis 10 ans.",
           proprietaireId: null,
-          reponses: reponses(null, 0, 5),
+          reponses: reponses(null, 2, 5),
           revele: false,
         },
         {
@@ -162,9 +166,8 @@ export function poolActif(): Pool {
 
 export function statsSecret(secret: Secret) {
   const total = Object.keys(secret.reponses).length;
-  const justes = secret.proprietaireId
-    ? Object.values(secret.reponses).filter((r) => r === secret.proprietaireId).length
-    : 0;
+  const cible = secret.proprietaireId ?? FAUX_SECRET;
+  const justes = Object.values(secret.reponses).filter((r) => r === cible).length;
   const pourcentage = total ? Math.round((justes / total) * 100) : 0;
   return { total, justes, pourcentage };
 }
@@ -178,7 +181,8 @@ export function statsJoueur(joueurId: string) {
       const rep = s.reponses[joueurId];
       if (!rep) continue;
       repondus += 1;
-      if (s.proprietaireId && rep === s.proprietaireId) justes += 1;
+      const cible = s.proprietaireId ?? FAUX_SECRET;
+      if (rep === cible) justes += 1;
     }
   }
   return { repondus, justes, pourcentage: repondus ? Math.round((justes / repondus) * 100) : 0 };
