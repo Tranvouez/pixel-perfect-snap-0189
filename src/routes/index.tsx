@@ -1,4 +1,5 @@
 
+
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import logo from "@/assets/logo-secret-story.png.asset.json";
@@ -10,8 +11,7 @@ export const Route = createFileRoute("/")({
       { title: "Secret Story Afterwork — Rejoindre la soirée" },
       {
         name: "description",
-        content:
-          "Rejoignez la soirée avec le code fourni par l'animateur.",
+        content: "Rejoignez la soirée avec le code.",
       },
       { property: "og:title", content: "Secret Story Afterwork" },
       {
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Accueil() {
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState("2007");
 
   return (
     <Screen className="glow-top flex flex-col px-6 pb-10 pt-8">
@@ -43,23 +43,22 @@ function Accueil() {
       </p>
 
       <div className="mt-10">
-        <label
-          htmlFor="code-soiree"
-          className="eyebrow block"
-        >
+        <label htmlFor="code-soiree" className="eyebrow block">
           Code de la soirée
         </label>
 
         <input
           id="code-soiree"
           type="text"
-          inputMode="text"
+          inputMode="numeric"
           autoComplete="off"
-          maxLength={8}
+          maxLength={4}
           value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          placeholder="EX : ABC123"
-          className="mt-2 h-14 w-full rounded-xl border border-input bg-surface px-4 text-center font-display text-2xl tracking-[0.2em] outline-none placeholder:text-muted-foreground placeholder:tracking-normal focus:border-primary"
+          onChange={(e) => {
+            const valeur = e.target.value.replace(/\D/g, "");
+            setCode(valeur);
+          }}
+          className="mt-2 h-14 w-full rounded-xl border border-input bg-surface px-4 text-center font-display text-2xl tracking-[0.2em] outline-none focus:border-primary"
         />
       </div>
 
