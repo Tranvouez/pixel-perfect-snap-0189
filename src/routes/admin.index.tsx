@@ -1,3 +1,4 @@
+
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Screen, TopBar, PrimaryAction } from "@/components/app-shell";
@@ -10,30 +11,21 @@ export const Route = createFileRoute("/admin/")({
         name: "description",
         content: "Connexion de l'animateur pour piloter la soirée.",
       },
-      { property: "og:title", content: "Espace animateur" },
-      {
-        property: "og:description",
-        content: "Pilotez toute la soirée depuis votre téléphone.",
-      },
     ],
   }),
   component: AdminConnexion,
 });
 
-// Code administrateur de la soirée
-const CODE_ADMIN = "SECRET2026";
+const CODE_ADMIN = "SECRET2026*";
 
 function AdminConnexion() {
   const navigate = useNavigate();
-
   const [code, setCode] = useState("");
   const [erreur, setErreur] = useState("");
 
   const connexion = () => {
     if (code.trim() === CODE_ADMIN) {
-      // On mémorise que cet appareil est connecté en administrateur
       sessionStorage.setItem("admin_authenticated", "true");
-
       setErreur("");
       navigate({ to: "/admin/soiree" });
     } else {
@@ -90,16 +82,13 @@ function AdminConnexion() {
             Se connecter
           </PrimaryAction>
 
-          <PrimaryAction
-            to="/"
-            variant="ghost"
-          >
+          <PrimaryAction to="/" variant="ghost">
             Retour
           </PrimaryAction>
         </div>
 
         <p className="mt-auto pt-10 text-xs text-muted-foreground">
-          L'accès animateur est réservé à l'organisateur de la soirée.
+          Accès réservé à l'organisateur.
         </p>
       </div>
     </Screen>
