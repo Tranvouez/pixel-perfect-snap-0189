@@ -57,7 +57,7 @@ function Accueil() {
 
       <div className="mt-10">
         <label htmlFor="code-soiree" className="eyebrow block">
-          Saisie du code - la maison des secrets est bien gardée. 
+          La maison des secrets est bien gardée. 
         </label>
 
         <input
