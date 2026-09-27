@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RejoindreRouteImport } from './routes/rejoindre'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminNouvelleSoireeRouteImport } from './routes/admin.nouvelle-soiree'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,34 +29,43 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminNouvelleSoireeRoute = AdminNouvelleSoireeRouteImport.update({
+  id: '/admin/nouvelle-soiree',
+  path: '/admin/nouvelle-soiree',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/rejoindre': typeof RejoindreRoute
+  '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/rejoindre': typeof RejoindreRoute
+  '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/rejoindre': typeof RejoindreRoute
+  '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/rejoindre' | '/admin/'
+  fullPaths: '/' | '/rejoindre' | '/admin/nouvelle-soiree' | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/rejoindre' | '/admin'
-  id: '__root__' | '/' | '/rejoindre' | '/admin/'
+  to: '/' | '/rejoindre' | '/admin/nouvelle-soiree' | '/admin'
+  id: '__root__' | '/' | '/rejoindre' | '/admin/nouvelle-soiree' | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RejoindreRoute: typeof RejoindreRoute
+  AdminNouvelleSoireeRoute: typeof AdminNouvelleSoireeRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -82,12 +92,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/nouvelle-soiree': {
+      id: '/admin/nouvelle-soiree'
+      path: '/admin/nouvelle-soiree'
+      fullPath: '/admin/nouvelle-soiree'
+      preLoaderRoute: typeof AdminNouvelleSoireeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RejoindreRoute: RejoindreRoute,
+  AdminNouvelleSoireeRoute: AdminNouvelleSoireeRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
