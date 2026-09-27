@@ -21,7 +21,7 @@ export const Route = createFileRoute("/rejoindre")({
 });
 
 function Rejoindre() {
-  const [pseudo, setPseudo] = useState("Christophe Beaugrand");
+  const [pseudo, setPseudo] = useState("");
   const [nb, setNb] = useState(1);
 
   return (
@@ -43,7 +43,7 @@ function Rejoindre() {
         />
 
         <p className="eyebrow mt-6">
-          Combien jouez-vous sur ce téléphone ?
+          Vous jouez à combien sur ce téléphone ?
         </p>
 
         <div className="mt-2 flex items-center justify-between rounded-xl border border-border bg-surface p-2">
