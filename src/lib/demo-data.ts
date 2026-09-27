@@ -56,9 +56,9 @@ function reponses(vrai: string | null, justes: number, total: number): Record<st
 
 export const SOIREE: Soiree = {
   id: "s1",
-  nom: "Afterwork du jeudi",
-  code: "A7K9",
-  lieu: "Le Salon M",
+  nom: "Secret story de rentrée",
+  code: "2007",
+  lieu: "La maison des secrets",
   joueurs: JOUEURS,
   pools: [
     {
