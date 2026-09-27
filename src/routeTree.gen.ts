@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JeuRouteImport } from './routes/jeu'
 import { Route as RejoindreRouteImport } from './routes/rejoindre'
+import { Route as RevelationRouteImport } from './routes/revelation'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminNouvelleSoireeRouteImport } from './routes/admin.nouvelle-soiree'
 import { Route as AdminSoireeRouteImport } from './routes/admin.soiree'
@@ -29,6 +30,11 @@ const JeuRoute = JeuRouteImport.update({
 const RejoindreRoute = RejoindreRouteImport.update({
   id: '/rejoindre',
   path: '/rejoindre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevelationRoute = RevelationRouteImport.update({
+  id: '/revelation',
+  path: '/revelation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/jeu': typeof JeuRoute
   '/rejoindre': typeof RejoindreRoute
+  '/revelation': typeof RevelationRoute
   '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
   '/admin/soiree': typeof AdminSoireeRoute
   '/admin/': typeof AdminIndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/jeu': typeof JeuRoute
   '/rejoindre': typeof RejoindreRoute
+  '/revelation': typeof RevelationRoute
   '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
   '/admin/soiree': typeof AdminSoireeRoute
   '/admin': typeof AdminIndexRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/jeu': typeof JeuRoute
   '/rejoindre': typeof RejoindreRoute
+  '/revelation': typeof RevelationRoute
   '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
   '/admin/soiree': typeof AdminSoireeRoute
   '/admin/': typeof AdminIndexRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/'
     | '/jeu'
     | '/rejoindre'
+    | '/revelation'
     | '/admin/nouvelle-soiree'
     | '/admin/soiree'
     | '/admin/'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/jeu'
     | '/rejoindre'
+    | '/revelation'
     | '/admin/nouvelle-soiree'
     | '/admin/soiree'
     | '/admin'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/jeu'
     | '/rejoindre'
+    | '/revelation'
     | '/admin/nouvelle-soiree'
     | '/admin/soiree'
     | '/admin/'
@@ -103,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JeuRoute: typeof JeuRoute
   RejoindreRoute: typeof RejoindreRoute
+  RevelationRoute: typeof RevelationRoute
   AdminNouvelleSoireeRoute: typeof AdminNouvelleSoireeRoute
   AdminSoireeRoute: typeof AdminSoireeRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -129,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/rejoindre'
       fullPath: '/rejoindre'
       preLoaderRoute: typeof RejoindreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revelation': {
+      id: '/revelation'
+      path: '/revelation'
+      fullPath: '/revelation'
+      preLoaderRoute: typeof RevelationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -159,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JeuRoute: JeuRoute,
   RejoindreRoute: RejoindreRoute,
+  RevelationRoute: RevelationRoute,
   AdminNouvelleSoireeRoute: AdminNouvelleSoireeRoute,
   AdminSoireeRoute: AdminSoireeRoute,
   AdminIndexRoute: AdminIndexRoute,
