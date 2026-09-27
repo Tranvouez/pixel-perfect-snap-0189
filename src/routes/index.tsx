@@ -52,12 +52,12 @@ function Accueil() {
       <h1 className="sr-only">Secret Story Afterwork</h1>
 
       <p className="mt-4 max-w-[34ch] text-sm leading-relaxed text-muted-foreground">
-        Saisir le code de la soirée, si besoin, contacter Benjamin Castaldi.
+        Si tu as oublié le code, contacte Benjamin Castaldi.
       </p>
 
       <div className="mt-10">
         <label htmlFor="code-soiree" className="eyebrow block">
-          Code de la soirée
+          Saisie du code - la maison des secrets est bien gardée. 
         </label>
 
         <input
@@ -89,11 +89,11 @@ function Accueil() {
 
       <div className="mt-6 space-y-3">
         <PrimaryAction onClick={rejoindre}>
-          Rejoindre la soirée
+          Rejoindre la soirée 
         </PrimaryAction>
 
         <PrimaryAction to="/admin" variant="ghost">
-          Pas là bonne voie, c'est pour la voix
+          Pas la bonne voie, c'est pour la voix
         </PrimaryAction>
       </div>
 
