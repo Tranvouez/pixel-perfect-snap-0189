@@ -139,7 +139,7 @@ function EcranJoueur() {
                             estFaux ? "border-accent bg-accent/20 text-accent" : "border-dashed border-accent/50 text-accent"
                           }`}
                         >
-                          🎭 Faux secret
+                           Faux secret
                         </button>
                       </div>
                     )}
