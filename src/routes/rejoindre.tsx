@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { SOIREE, TEAMS } from "@/lib/demo-data";
-import { Screen, TopBar, PrimaryAction, TeamDot } from "@/components/app-shell";
+import { SOIREE } from "@/lib/demo-data";
+import { Screen, TopBar, PrimaryAction } from "@/components/app-shell";
 
 export const Route = createFileRoute("/rejoindre")({
   head: () => ({
     meta: [
       { title: "Rejoindre — Secret Story Afterwork" },
-      { name: "description", content: "Entrez votre pseudo et choisissez votre team." },
-      { property: "og:title", content: "Rejoindre une soirée" },
-      { property: "og:description", content: "Pseudo, team, et c'est parti pour les secrets." },
+      { name: "description", content: "Entrez le code de la soirée et votre prénom pour jouer." },
+      { property: "og:title", content: "Rejoindre une soirée Secret Story" },
+      { property: "og:description", content: "Un code, un prénom, et c'est parti pour les secrets." },
     ],
   }),
   component: Rejoindre,
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/rejoindre")({
 function Rejoindre() {
   const [pseudo, setPseudo] = useState("");
   const [code, setCode] = useState(SOIREE.code);
-  const [teamId, setTeamId] = useState(TEAMS[0]!.id);
+  const [nb, setNb] = useState(1);
 
   return (
     <Screen className="flex flex-col">
@@ -35,34 +35,37 @@ function Rejoindre() {
         />
 
         <label className="eyebrow mt-6 block" htmlFor="pseudo">
-          Votre prénom ou pseudo
+          {nb > 1 ? "Vos prénoms (ex : Léa & Tom)" : "Votre prénom ou pseudo"}
         </label>
         <input
           id="pseudo"
           value={pseudo}
           onChange={(e) => setPseudo(e.target.value)}
-          placeholder="Théo"
+          placeholder={nb > 1 ? "Léa & Tom" : "Théo"}
           className="mt-2 h-14 w-full rounded-xl border border-input bg-surface px-4 text-base outline-none placeholder:text-muted-foreground focus:border-primary"
         />
 
-        <p className="eyebrow mt-6">Votre team</p>
-        <div className="mt-2 space-y-2">
-          {TEAMS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTeamId(t.id)}
-              className={`flex h-14 w-full items-center gap-3 rounded-xl border px-4 text-left ${
-                teamId === t.id ? "border-primary bg-primary/10" : "border-border bg-surface"
-              }`}
-            >
-              <TeamDot couleur={t.couleur} />
-              <span className="text-sm font-medium">{t.nom}</span>
-              {teamId === t.id && (
-                <span className="ml-auto text-xs font-semibold text-primary">Choisie</span>
-              )}
-            </button>
-          ))}
+        <p className="eyebrow mt-6">Combien jouez-vous sur ce téléphone ?</p>
+        <div className="mt-2 flex items-center justify-between rounded-xl border border-border bg-surface p-2">
+          <button
+            type="button"
+            onClick={() => setNb((n) => Math.max(1, n - 1))}
+            className="grid size-11 place-items-center rounded-lg bg-surface-2 text-xl"
+            aria-label="Moins"
+          >
+            −
+          </button>
+          <span className="font-display text-2xl">
+            {nb} <span className="text-sm text-muted-foreground">{nb > 1 ? "personnes" : "personne"}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setNb((n) => Math.min(6, n + 1))}
+            className="grid size-11 place-items-center rounded-lg bg-surface-2 text-xl"
+            aria-label="Plus"
+          >
+            +
+          </button>
         </div>
 
         <div className="mt-auto pt-8">

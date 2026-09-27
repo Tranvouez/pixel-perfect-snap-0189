@@ -6,9 +6,9 @@ export const Route = createFileRoute("/admin/nouvelle-soiree")({
   head: () => ({
     meta: [
       { title: "Créer une soirée — Secret Story Afterwork" },
-      { name: "description", content: "Nom, lieu, teams et nombre de pools de votre soirée." },
+      { name: "description", content: "Nom, lieu et nombre de pools de votre soirée." },
       { property: "og:title", content: "Créer une soirée" },
-      { property: "og:description", content: "Préparez vos pools et vos teams en une minute." },
+      { property: "og:description", content: "Préparez vos pools en une minute." },
     ],
   }),
   component: NouvelleSoiree,
@@ -18,7 +18,6 @@ function NouvelleSoiree() {
   const [nom, setNom] = useState("Afterwork du jeudi");
   const [lieu, setLieu] = useState("Le Salon M");
   const [nbPools, setNbPools] = useState(3);
-  const [teams, setTeams] = useState(["Les Vins", "La Scène", "Le Comptoir"]);
   const code = "A7K9";
 
   return (
@@ -63,38 +62,6 @@ function NouvelleSoiree() {
                 {n} pools
               </button>
             ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="eyebrow">Teams</p>
-          <div className="mt-2 space-y-2">
-            {teams.map((t, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  value={t}
-                  onChange={(e) =>
-                    setTeams(teams.map((x, xi) => (xi === i ? e.target.value : x)))
-                  }
-                  className="h-13 flex-1 rounded-xl border border-input bg-surface px-4 text-sm outline-none focus:border-primary"
-                />
-                <button
-                  type="button"
-                  onClick={() => setTeams(teams.filter((_, xi) => xi !== i))}
-                  className="grid h-13 w-13 place-items-center rounded-xl border border-border text-muted-foreground"
-                  aria-label={`Supprimer ${t}`}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setTeams([...teams, `Team ${teams.length + 1}`])}
-              className="h-13 w-full rounded-xl border border-dashed border-border text-sm text-muted-foreground"
-            >
-              + Ajouter une team
-            </button>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import logo from "@/assets/logo-secret-story.png.asset.json";
 import { SOIREE } from "@/lib/demo-data";
 import { Screen, PrimaryAction } from "@/components/app-shell";
 
@@ -23,13 +24,13 @@ export const Route = createFileRoute("/")({
 
 function Accueil() {
   return (
-    <Screen className="glow-top flex flex-col px-6 pb-10 pt-16">
-      <p className="eyebrow">Salon des secrets</p>
-      <h1 className="mt-3 font-display text-4xl font-semibold leading-[0.95]">
-        Secret
-        <br />
-        Afterwork
-      </h1>
+    <Screen className="glow-top flex flex-col px-6 pb-10 pt-8">
+      <img
+        src={logo.url}
+        alt="Secret Story de rentrée de la DMR"
+        className="neon mx-auto w-full max-w-[300px] rounded-3xl"
+      />
+      <h1 className="sr-only">Secret Story Afterwork</h1>
       <p className="mt-4 max-w-[34ch] text-sm leading-relaxed text-muted-foreground">
         Entrez le code de la soirée pour rejoindre la table. Les secrets circulent, à vous de
         deviner à qui ils appartiennent.
@@ -39,7 +40,7 @@ function Accueil() {
         {SOIREE.code.split("").map((c, i) => (
           <div
             key={i}
-            className="grid aspect-square flex-1 place-items-center rounded-xl border border-border bg-surface font-display text-3xl"
+            className="grid aspect-square flex-1 place-items-center rounded-xl border border-primary/50 bg-surface font-display text-3xl text-neon"
           >
             {c}
           </div>

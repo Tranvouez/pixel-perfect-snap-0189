@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { SOIREE, joueur, statsSecret, team } from "@/lib/demo-data";
+import { SOIREE, joueur, statsSecret } from "@/lib/demo-data";
 import { Screen, TopBar, Card, BottomNav } from "@/components/app-shell";
 
 export const Route = createFileRoute("/revelation")({
@@ -41,9 +41,6 @@ function Revelation() {
           <p className="mt-4 font-display text-3xl leading-none">
             {prop ? prop.pseudo : "Personne"}
           </p>
-          {prop && (
-            <p className="mt-1 text-xs text-muted-foreground">{team(prop.teamId)?.nom}</p>
-          )}
           <p className="mx-auto mt-4 max-w-[30ch] text-sm leading-snug text-muted-foreground">
             « {secret.texte} »
           </p>

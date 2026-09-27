@@ -1,3 +1,4 @@
+import logo from "@/assets/logo-secret-story.png.asset.json";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -9,7 +10,7 @@ export function Screen({
   className?: string;
 }) {
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh">
       <div className={`screen-shell border-x border-border/50 ${className}`}>{children}</div>
     </div>
   );
@@ -27,9 +28,7 @@ export function TopBar({ titre, retour }: { titre: string; retour?: string }) {
           ←
         </Link>
       ) : (
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary font-display text-sm text-primary-foreground">
-          S
-        </span>
+        <img src={logo.url} alt="Secret Story" className="size-9 shrink-0 rounded-lg object-cover" />
       )}
       <span className="font-display text-sm tracking-[0.08em]">{titre}</span>
     </header>
@@ -66,7 +65,7 @@ export function PrimaryAction({
   const base =
     "flex h-13 w-full items-center justify-center rounded-xl px-4 py-4 text-base font-semibold transition active:brightness-95";
   const styles = {
-    primary: "bg-primary text-primary-foreground",
+    primary: "bg-neon-gradient text-primary-foreground neon",
     accent: "bg-accent text-accent-foreground",
     ghost: "border border-border bg-surface text-foreground",
   } as const;
@@ -85,14 +84,6 @@ export function PrimaryAction({
   );
 }
 
-export function TeamDot({ couleur }: { couleur: "primary" | "accent" | "success" }) {
-  const map = {
-    primary: "bg-primary",
-    accent: "bg-accent",
-    success: "bg-success",
-  } as const;
-  return <span className={`size-2 shrink-0 rounded-full ${map[couleur]}`} />;
-}
 
 export function BottomNav({ actif }: { actif: "jeu" | "revelation" | "historique" }) {
   const items = [

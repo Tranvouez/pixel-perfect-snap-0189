@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { SOIREE, joueur, statsSecret, team } from "@/lib/demo-data";
+import { SOIREE, joueur, statsSecret } from "@/lib/demo-data";
 import { Screen, TopBar, Card, BottomNav } from "@/components/app-shell";
 
 export const Route = createFileRoute("/historique")({
@@ -56,7 +56,7 @@ function Historique() {
               <div className="mt-3 flex items-center gap-2">
                 {prop ? (
                   <span className="rounded-full bg-success/15 px-2.5 py-1 text-[11px] text-success">
-                    {prop.pseudo} · {team(prop.teamId)?.nom}
+                    {prop.pseudo}
                   </span>
                 ) : (
                   <span className="rounded-full bg-accent/15 px-2.5 py-1 text-[11px] text-accent">
@@ -77,26 +77,6 @@ function Historique() {
                 {st.justes} bonne{st.justes > 1 ? "s" : ""} réponse{st.justes > 1 ? "s" : ""} sur{" "}
                 {st.total} joueurs
               </p>
-              <details className="mt-3">
-                <summary className="cursor-pointer text-xs text-muted-foreground">
-                  Voir les associations des joueurs
-                </summary>
-                <ul className="mt-2 space-y-1">
-                  {Object.entries(s.reponses).map(([jid, rep]) => {
-                    const juste = s.proprietaireId != null && rep === s.proprietaireId;
-                    return (
-                      <li key={jid} className="flex items-center gap-2 text-xs">
-                        <span className="text-muted-foreground">{joueur(jid)?.pseudo}</span>
-                        <span className="text-muted-foreground">→</span>
-                        <span className={juste ? "text-success" : "text-foreground"}>
-                          {joueur(rep)?.pseudo}
-                        </span>
-                        {juste && <span className="ml-auto text-success">✓</span>}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </details>
             </Card>
           );
         })}
