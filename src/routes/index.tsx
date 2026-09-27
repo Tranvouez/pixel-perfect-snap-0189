@@ -97,9 +97,6 @@ function Accueil() {
         </PrimaryAction>
       </div>
 
-      <div className="mt-auto pt-10 text-xs text-muted-foreground">
-        Le code vous est communiqué par l'animateur de la soirée.
-      </div>
     </Screen>
   );
 }
