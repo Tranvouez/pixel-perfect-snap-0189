@@ -52,8 +52,7 @@ function Accueil() {
       <h1 className="sr-only">Secret Story Afterwork</h1>
 
       <p className="mt-4 max-w-[34ch] text-sm leading-relaxed text-muted-foreground">
-        Entrez le code de la soirée communiqué par l'animateur pour rejoindre
-        le jeu.
+        Saisir le code de la soirée, si besoin, contacter Benjamin Castaldi.
       </p>
 
       <div className="mt-10">
