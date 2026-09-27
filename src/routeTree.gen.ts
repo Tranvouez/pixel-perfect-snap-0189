@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JeuRouteImport } from './routes/jeu'
 import { Route as RejoindreRouteImport } from './routes/rejoindre'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminNouvelleSoireeRouteImport } from './routes/admin.nouvelle-soiree'
@@ -18,6 +19,11 @@ import { Route as AdminSoireeRouteImport } from './routes/admin.soiree'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JeuRoute = JeuRouteImport.update({
+  id: '/jeu',
+  path: '/jeu',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RejoindreRoute = RejoindreRouteImport.update({
@@ -43,6 +49,7 @@ const AdminSoireeRoute = AdminSoireeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/jeu': typeof JeuRoute
   '/rejoindre': typeof RejoindreRoute
   '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
   '/admin/soiree': typeof AdminSoireeRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/jeu': typeof JeuRoute
   '/rejoindre': typeof RejoindreRoute
   '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
   '/admin/soiree': typeof AdminSoireeRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/jeu': typeof JeuRoute
   '/rejoindre': typeof RejoindreRoute
   '/admin/nouvelle-soiree': typeof AdminNouvelleSoireeRoute
   '/admin/soiree': typeof AdminSoireeRoute
@@ -66,12 +75,24 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/rejoindre' | '/admin/nouvelle-soiree' | '/admin/soiree' | '/admin/'
+    | '/'
+    | '/jeu'
+    | '/rejoindre'
+    | '/admin/nouvelle-soiree'
+    | '/admin/soiree'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/rejoindre' | '/admin/nouvelle-soiree' | '/admin/soiree' | '/admin'
+  to:
+    | '/'
+    | '/jeu'
+    | '/rejoindre'
+    | '/admin/nouvelle-soiree'
+    | '/admin/soiree'
+    | '/admin'
   id:
     | '__root__'
     | '/'
+    | '/jeu'
     | '/rejoindre'
     | '/admin/nouvelle-soiree'
     | '/admin/soiree'
@@ -80,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  JeuRoute: typeof JeuRoute
   RejoindreRoute: typeof RejoindreRoute
   AdminNouvelleSoireeRoute: typeof AdminNouvelleSoireeRoute
   AdminSoireeRoute: typeof AdminSoireeRoute
@@ -93,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jeu': {
+      id: '/jeu'
+      path: '/jeu'
+      fullPath: '/jeu'
+      preLoaderRoute: typeof JeuRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rejoindre': {
@@ -128,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  JeuRoute: JeuRoute,
   RejoindreRoute: RejoindreRoute,
   AdminNouvelleSoireeRoute: AdminNouvelleSoireeRoute,
   AdminSoireeRoute: AdminSoireeRoute,
