@@ -93,7 +93,7 @@ function Accueil() {
         </PrimaryAction>
 
         <PrimaryAction to="/admin" variant="ghost">
-          Espace animateur
+          Pas là bonne voie, c'est pour la voix
         </PrimaryAction>
       </div>
 
