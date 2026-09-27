@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { JOUEUR_COURANT, SOIREE, joueur, statsJoueur } from "@/lib/demo-data";
+import { FAUX_SECRET, JOUEUR_COURANT, SOIREE, joueur, statsJoueur } from "@/lib/demo-data";
 import { Screen, TopBar, Card, BottomNav } from "@/components/app-shell";
 
 export const Route = createFileRoute("/jeu")({
@@ -25,6 +25,10 @@ function EcranJoueur() {
   const stats = statsJoueur(JOUEUR_COURANT);
   const participants = pool.joueurIds.map((id) => joueur(id)!).filter((j) => j.id !== JOUEUR_COURANT);
   const nbRep = Object.keys(choix).length;
+
+  /** Un participant déjà associé à un AUTRE secret ne peut plus être choisi ailleurs. */
+  const dejaPris = (participantId: string, secretId: string) =>
+    Object.entries(choix).some(([sid, val]) => sid !== secretId && val === participantId);
 
   return (
     <Screen className="flex flex-col">
@@ -66,7 +70,8 @@ function EcranJoueur() {
             <p className="eyebrow pt-1">Les secrets · touchez-en un pour l'associer</p>
             <div className="space-y-2">
               {aDeviner.map((s, i) => {
-                const choisi = joueur(choix[s.id]);
+                const estFaux = choix[s.id] === FAUX_SECRET;
+                const choisi = estFaux ? null : joueur(choix[s.id]);
                 const estOuvert = ouvert === s.id;
                 return (
                   <div
@@ -88,6 +93,10 @@ function EcranJoueur() {
                         <span className="rounded-full bg-neon-gradient px-2.5 py-1 font-semibold text-primary-foreground">
                           → {choisi.pseudo}
                         </span>
+                      ) : estFaux ? (
+                        <span className="rounded-full border border-accent/50 bg-accent/15 px-2.5 py-1 font-semibold text-accent">
+                          🎭 Faux secret
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">Pas encore associé</span>
                       )}
@@ -96,23 +105,42 @@ function EcranJoueur() {
                       <div className="mt-3 flex flex-wrap gap-2 pl-7">
                         {participants.map((j) => {
                           const actif = choix[s.id] === j.id;
+                          const indisponible = !actif && dejaPris(j.id, s.id);
                           return (
                             <button
                               key={j.id}
                               type="button"
+                              disabled={indisponible}
                               onClick={() => {
                                 setChoix({ ...choix, [s.id]: j.id });
                                 const suivant = aDeviner.find((x) => x.id !== s.id && !choix[x.id]);
                                 setOuvert(suivant?.id ?? null);
                               }}
                               className={`h-10 rounded-full border px-4 text-sm ${
-                                actif ? "border-primary bg-primary/20 text-foreground" : "border-border bg-surface"
+                                actif
+                                  ? "border-primary bg-primary/20 text-foreground"
+                                  : indisponible
+                                    ? "cursor-not-allowed border-border bg-surface/40 text-muted-foreground/50 line-through"
+                                    : "border-border bg-surface"
                               }`}
                             >
                               {j.pseudo}
                             </button>
                           );
                         })}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChoix({ ...choix, [s.id]: FAUX_SECRET });
+                            const suivant = aDeviner.find((x) => x.id !== s.id && !choix[x.id]);
+                            setOuvert(suivant?.id ?? null);
+                          }}
+                          className={`h-10 rounded-full border px-4 text-sm ${
+                            estFaux ? "border-accent bg-accent/20 text-accent" : "border-dashed border-accent/50 text-accent"
+                          }`}
+                        >
+                          🎭 Faux secret
+                        </button>
                       </div>
                     )}
                   </div>
