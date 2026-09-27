@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import logo from "@/assets/logo-secret-story.png.asset.json";
-import { SOIREE } from "@/lib/demo-data";
 import { Screen, PrimaryAction } from "@/components/app-shell";
 
 export const Route = createFileRoute("/")({
@@ -10,12 +11,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Rejoignez la soirée avec un code, associez les secrets aux personnes et suivez les révélations en direct.",
+          "Rejoignez la soirée avec le code fourni par l'animateur.",
       },
       { property: "og:title", content: "Secret Story Afterwork" },
       {
         property: "og:description",
-        content: "Le jeu de secrets de vos soirées entre collègues, directement dans le navigateur.",
+        content:
+          "Le jeu de secrets de vos soirées entre collègues, directement dans le navigateur.",
       },
     ],
   }),
@@ -23,6 +25,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Accueil() {
+  const [code, setCode] = useState("");
+
   return (
     <Screen className="glow-top flex flex-col px-6 pb-10 pt-8">
       <img
@@ -30,37 +34,47 @@ function Accueil() {
         alt="Secret Story de rentrée de la DMR"
         className="neon mx-auto w-full max-w-[300px] rounded-3xl"
       />
+
       <h1 className="sr-only">Secret Story Afterwork</h1>
+
       <p className="mt-4 max-w-[34ch] text-sm leading-relaxed text-muted-foreground">
-        Entrez le code de la soirée pour rejoindre la table. Les secrets circulent, à vous de
-        deviner à qui ils appartiennent.
+        Entrez le code de la soirée communiqué par l'animateur pour rejoindre
+        le jeu.
       </p>
 
-      <div className="mt-10 flex gap-2">
-        {SOIREE.code.split("").map((c, i) => (
-          <div
-            key={i}
-            className="grid aspect-square flex-1 place-items-center rounded-xl border border-primary/50 bg-surface font-display text-3xl text-neon"
-          >
-            {c}
-          </div>
-        ))}
+      <div className="mt-10">
+        <label
+          htmlFor="code-soiree"
+          className="eyebrow block"
+        >
+          Code de la soirée
+        </label>
+
+        <input
+          id="code-soiree"
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          maxLength={8}
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="EX : ABC123"
+          className="mt-2 h-14 w-full rounded-xl border border-input bg-surface px-4 text-center font-display text-2xl tracking-[0.2em] outline-none placeholder:text-muted-foreground placeholder:tracking-normal focus:border-primary"
+        />
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">
-        Code de démonstration · {SOIREE.nom} · {SOIREE.lieu}
-      </p>
 
-      <div className="mt-8 space-y-3">
-        <PrimaryAction to="/rejoindre">Rejoindre la soirée</PrimaryAction>
+      <div className="mt-6 space-y-3">
+        <PrimaryAction to="/rejoindre">
+          Rejoindre la soirée
+        </PrimaryAction>
+
         <PrimaryAction to="/admin" variant="ghost">
           Espace animateur
         </PrimaryAction>
       </div>
 
       <div className="mt-auto pt-10 text-xs text-muted-foreground">
-        <Link to="/historique" className="underline underline-offset-4">
-          Voir l'historique de la soirée
-        </Link>
+        Le code vous est communiqué par l'animateur de la soirée.
       </div>
     </Screen>
   );
