@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HistoriqueRouteImport } from './routes/historique'
 import { Route as JeuRouteImport } from './routes/jeu'
 import { Route as RejoindreRouteImport } from './routes/rejoindre'
 import { Route as RevelationRouteImport } from './routes/revelation'
@@ -20,6 +21,11 @@ import { Route as AdminSoireeRouteImport } from './routes/admin.soiree'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoriqueRoute = HistoriqueRouteImport.update({
+  id: '/historique',
+  path: '/historique',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JeuRoute = JeuRouteImport.update({
@@ -55,6 +61,7 @@ const AdminSoireeRoute = AdminSoireeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/historique': typeof HistoriqueRoute
   '/jeu': typeof JeuRoute
   '/rejoindre': typeof RejoindreRoute
   '/revelation': typeof RevelationRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/historique': typeof HistoriqueRoute
   '/jeu': typeof JeuRoute
   '/rejoindre': typeof RejoindreRoute
   '/revelation': typeof RevelationRoute
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/historique': typeof HistoriqueRoute
   '/jeu': typeof JeuRoute
   '/rejoindre': typeof RejoindreRoute
   '/revelation': typeof RevelationRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/historique'
     | '/jeu'
     | '/rejoindre'
     | '/revelation'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/historique'
     | '/jeu'
     | '/rejoindre'
     | '/revelation'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/historique'
     | '/jeu'
     | '/rejoindre'
     | '/revelation'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HistoriqueRoute: typeof HistoriqueRoute
   JeuRoute: typeof JeuRoute
   RejoindreRoute: typeof RejoindreRoute
   RevelationRoute: typeof RevelationRoute
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/historique': {
+      id: '/historique'
+      path: '/historique'
+      fullPath: '/historique'
+      preLoaderRoute: typeof HistoriqueRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jeu': {
@@ -177,6 +197,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HistoriqueRoute: HistoriqueRoute,
   JeuRoute: JeuRoute,
   RejoindreRoute: RejoindreRoute,
   RevelationRoute: RevelationRoute,
