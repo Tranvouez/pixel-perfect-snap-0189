@@ -1,6 +1,5 @@
 
-
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import logo from "@/assets/logo-secret-story.png.asset.json";
 import { Screen, PrimaryAction } from "@/components/app-shell";
@@ -25,7 +24,22 @@ export const Route = createFileRoute("/")({
 });
 
 function Accueil() {
-  const [code, setCode] = useState("2007");
+  const navigate = useNavigate();
+
+  const [code, setCode] = useState("");
+  const [erreur, setErreur] = useState("");
+
+  const rejoindre = () => {
+    if (code === "2007") {
+      setErreur("");
+
+      // Le code est valide : accès à la page suivante
+      navigate({ to: "/rejoindre" });
+      return;
+    }
+
+    setErreur("Code de soirée incorrect.");
+  };
 
   return (
     <Screen className="glow-top flex flex-col px-6 pb-10 pt-8">
@@ -57,13 +71,25 @@ function Accueil() {
           onChange={(e) => {
             const valeur = e.target.value.replace(/\D/g, "");
             setCode(valeur);
+            setErreur("");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              rejoindre();
+            }
           }}
           className="mt-2 h-14 w-full rounded-xl border border-input bg-surface px-4 text-center font-display text-2xl tracking-[0.2em] outline-none focus:border-primary"
         />
+
+        {erreur && (
+          <p className="mt-3 text-center text-sm text-destructive">
+            {erreur}
+          </p>
+        )}
       </div>
 
       <div className="mt-6 space-y-3">
-        <PrimaryAction to="/rejoindre">
+        <PrimaryAction onClick={rejoindre}>
           Rejoindre la soirée
         </PrimaryAction>
 
@@ -78,3 +104,4 @@ function Accueil() {
     </Screen>
   );
 }
+
