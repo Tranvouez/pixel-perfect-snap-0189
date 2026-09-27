@@ -84,14 +84,6 @@ export function PrimaryAction({
   );
 }
 
-export function TeamDot({ couleur }: { couleur: "primary" | "accent" | "success" }) {
-  const map = {
-    primary: "bg-primary",
-    accent: "bg-accent",
-    success: "bg-success",
-  } as const;
-  return <span className={`size-2 shrink-0 rounded-full ${map[couleur]}`} />;
-}
 
 export function BottomNav({ actif }: { actif: "jeu" | "revelation" | "historique" }) {
   const items = [
