@@ -2,6 +2,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Screen, TopBar, PrimaryAction } from "@/components/app-shell";
+import { adminLogin } from "@/lib/game.functions";
+import { session } from "@/lib/session";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -16,19 +18,19 @@ export const Route = createFileRoute("/admin/")({
   component: AdminConnexion,
 });
 
-const CODE_ADMIN = "SECRET2026*";
-
 function AdminConnexion() {
   const navigate = useNavigate();
   const [code, setCode] = useState("");
   const [erreur, setErreur] = useState("");
 
-  const connexion = () => {
-    if (code.trim() === CODE_ADMIN) {
-      sessionStorage.setItem("admin_authenticated", "true");
+  // Le code est vérifié par le serveur : il n'existe plus en clair dans le navigateur.
+  const connexion = async () => {
+    try {
+      await adminLogin({ data: { code: code.trim() } });
+      session.setAdmin(code.trim());
       setErreur("");
       navigate({ to: "/admin/soiree" });
-    } else {
+    } catch {
       setErreur("Code incorrect.");
     }
   };

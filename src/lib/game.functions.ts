@@ -3,9 +3,9 @@ import { z } from "zod";
 import {
   FAUX,
   db,
-  estJuste,
   joueurParToken,
   poolAccessible,
+  statsJoueurPool,
   statsSecret,
   verifierAdmin,
 } from "./game.server";
@@ -97,26 +97,16 @@ export const poolJoueur = createServerFn({ method: "POST" })
         )
       : [];
     const mesReponses: Record<string, string> = {};
-    let justes = 0;
-    for (const r of reps) {
-      mesReponses[r.secret_id] = r.choix_faux ? FAUX : (r.choix_joueur_id ?? "");
-      const s = secrets.find((x) => x.id === r.secret_id);
-      if (s && estJuste(s, r)) justes += 1;
-    }
-    const repondus = reps.length;
+    for (const r of reps) mesReponses[r.secret_id] = r.choix_faux ? FAUX : (r.choix_joueur_id ?? "");
+    const st = statsJoueurPool(moi.id, secrets, reps);
     return {
       pool: { id: pool.id, nom: pool.nom, reponsesVisibles: pool.reponses_visibles },
       moi: { id: moi.id, pseudo: moi.pseudo, nbParticipants: moi.nb_participants },
-      // Uniquement le texte : jamais le propriétaire ni vrai/faux.
+      // Uniquement le texte : jamais le propriétaire ni vrai/faux ni les bonnes réponses.
       secrets: secrets.map((s) => ({ id: s.id, texte: s.texte })),
       participants,
       mesReponses,
-      stats: {
-        repondus,
-        total: secrets.length,
-        justes,
-        pourcentage: repondus ? Math.round((justes / repondus) * 100) : 0,
-      },
+      stats: { repondus: st.repondus, total: st.total, justes: st.justes, pourcentage: st.pourcentage },
     };
   });
 
@@ -135,7 +125,7 @@ export const repondre = createServerFn({ method: "POST" })
 
     if (data.choix === null) {
       ok(await db().from("reponses").delete().eq("joueur_id", moi.id).eq("secret_id", secret.id));
-      return { ok: true };
+      return { ok: true, stats: await statsPoolDuJoueur(moi.id, pool.id) };
     }
     const faux = data.choix === FAUX;
     if (!faux) {
@@ -171,8 +161,26 @@ export const repondre = createServerFn({ method: "POST" })
           { onConflict: "joueur_id,secret_id" },
         ),
     );
-    return { ok: true };
+    return { ok: true, stats: await statsPoolDuJoueur(moi.id, pool.id) };
   });
+
+/** Recalcul serveur des stats d'un joueur sur un pool (la correction ne quitte jamais le serveur). */
+async function statsPoolDuJoueur(joueurId: string, poolId: string) {
+  const secrets = ok(
+    await db().from("secrets").select("id, est_faux, proprietaire_id").eq("pool_id", poolId),
+  );
+  const reps = secrets.length
+    ? ok(
+        await db()
+          .from("reponses")
+          .select("joueur_id, secret_id, choix_joueur_id, choix_faux")
+          .eq("joueur_id", joueurId)
+          .in("secret_id", secrets.map((s) => s.id)),
+      )
+    : [];
+  const st = statsJoueurPool(joueurId, secrets, reps);
+  return { repondus: st.repondus, total: st.total, justes: st.justes, pourcentage: st.pourcentage };
+}
 
 async function secretsRevelesDuPool(poolId: string) {
   const secrets = ok(
@@ -337,6 +345,16 @@ export const adminSauverPool = createServerFn({ method: "POST" })
       if (data.nom !== undefined) patch.nom = data.nom;
       if (data.accessible !== undefined) patch.accessible = data.accessible;
       if (data.reponsesVisibles !== undefined) patch.reponses_visibles = data.reponsesVisibles;
+      if (data.reponsesVisibles === true) {
+        const cur = ok(
+          await db().from("pools").select("accessible").eq("id", poolId).eq("soiree_id", data.soireeId).single(),
+        );
+        if (!(data.accessible ?? cur.accessible)) {
+          throw new Error("Rendez d'abord le pool visible avant d'afficher les réponses.");
+        }
+      }
+      // Un pool rendu inaccessible ne peut plus exposer de révélations.
+      if (data.accessible === false) patch.reponses_visibles = false;
       if (Object.keys(patch).length) {
         const res = await db().from("pools").update(patch).eq("id", poolId).eq("soiree_id", data.soireeId);
         if (res.error?.code === "23505") throw new Error("Un pool porte déjà ce nom.");
@@ -382,6 +400,25 @@ export const adminSauverSecret = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     verifierAdmin(data.code);
     if (!data.estFaux && !data.proprietaireId) throw new Error("Choisissez le propriétaire du vrai secret.");
+    if (data.poolId) {
+      const p = ok(await db().from("pools").select("soiree_id").eq("id", data.poolId).maybeSingle());
+      if (p?.soiree_id !== data.soireeId) throw new Error("Pool inconnu pour cette soirée.");
+    }
+    if (!data.estFaux && data.proprietaireId) {
+      const j = ok(await db().from("joueurs").select("soiree_id").eq("id", data.proprietaireId).maybeSingle());
+      if (j?.soiree_id !== data.soireeId) throw new Error("Joueur inconnu pour cette soirée.");
+    }
+    if (data.id) {
+      const actuel = ok(
+        await db().from("secrets").select("pool_id").eq("id", data.id).eq("soiree_id", data.soireeId).maybeSingle(),
+      );
+      if (actuel && actuel.pool_id !== data.poolId) {
+        const reps = ok(await db().from("reponses").select("id").eq("secret_id", data.id).limit(1));
+        if (reps.length) {
+          throw new Error("Des joueurs ont déjà répondu à ce secret : impossible de le changer de pool.");
+        }
+      }
+    }
     const row = {
       soiree_id: data.soireeId,
       texte: data.texte,

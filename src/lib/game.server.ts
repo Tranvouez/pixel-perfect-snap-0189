@@ -1,14 +1,22 @@
 // Logique serveur uniquement : jamais envoyée au navigateur.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export const FAUX = "__faux__";
+export { FAUX, estJuste, statsSecret, statsJoueurPool, pct } from "./stats";
+export type { SecretLite as SecretRow, ReponseLite as ReponseRow } from "./stats";
 
 export function db() {
   return supabaseAdmin;
 }
 
 export function verifierAdmin(code: string) {
-  const attendu = process.env["ADMIN_CODE"] || "SECRET2026*";
+  let attendu = process.env["ADMIN_CODE"];
+  if (!attendu) {
+    // Pas de code par défaut en production : ADMIN_CODE est obligatoire.
+    if (process.env["NODE_ENV"] === "production") {
+      throw new Error("ADMIN_CODE n'est pas configuré sur le serveur.");
+    }
+    attendu = "SECRET2026*";
+  }
   if (code.trim() !== attendu) throw new Error("Code de la Voix incorrect.");
 }
 
@@ -33,31 +41,4 @@ export async function poolAccessible(poolId: string, soireeId: string) {
     throw new Error("Ce pool n'est pas accessible.");
   }
   return data;
-}
-
-export type SecretRow = {
-  id: string;
-  est_faux: boolean;
-  proprietaire_id: string | null;
-};
-export type ReponseRow = {
-  joueur_id: string;
-  secret_id: string;
-  choix_joueur_id: string | null;
-  choix_faux: boolean;
-};
-
-export function estJuste(s: SecretRow, r: ReponseRow) {
-  if (s.est_faux) return r.choix_faux;
-  return !!s.proprietaire_id && !r.choix_faux && r.choix_joueur_id === s.proprietaire_id;
-}
-
-export function statsSecret(s: SecretRow, reps: ReponseRow[]) {
-  const liste = reps.filter((r) => r.secret_id === s.id);
-  const justes = liste.filter((r) => estJuste(s, r)).length;
-  return {
-    reponses: liste.length,
-    justes,
-    pourcentage: liste.length ? Math.round((justes / liste.length) * 100) : 0,
-  };
 }

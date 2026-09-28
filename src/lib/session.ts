@@ -32,6 +32,19 @@ export const session = {
   setAdminSoiree: (v: string | null) => set(K.adminSoiree, v),
 };
 
+/**
+ * Position de navigation dans l'onglet Révélation : locale à CE téléphone,
+ * par pool, jamais envoyée au serveur ni synchronisée entre joueurs.
+ */
+export const revelationIndex = {
+  lire: (poolId: string) => {
+    const v = get(`ss_rev_${poolId}`, true);
+    const n = v === null ? 0 : Number.parseInt(v, 10);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  },
+  ecrire: (poolId: string, i: number) => set(`ss_rev_${poolId}`, String(i), true),
+};
+
 /** Lit une valeur locale après hydratation (évite les écarts serveur/client). */
 export function useLocal<T>(lire: () => T): { pret: boolean; valeur: T | null } {
   const [etat, setEtat] = useState<{ pret: boolean; valeur: T | null }>({ pret: false, valeur: null });
