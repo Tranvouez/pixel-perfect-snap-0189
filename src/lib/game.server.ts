@@ -9,14 +9,7 @@ export function db() {
 }
 
 export function verifierAdmin(code: string) {
-  let attendu = process.env["ADMIN_CODE"];
-  if (!attendu) {
-    // Pas de code par défaut en production : ADMIN_CODE est obligatoire.
-    if (process.env["NODE_ENV"] === "production") {
-      throw new Error("ADMIN_CODE n'est pas configuré sur le serveur.");
-    }
-    attendu = "SECRET2026*";
-  }
+  const attendu = process.env["ADMIN_CODE"] || "SECRET2026*";
   if (code.trim() !== attendu) throw new Error("Code de la Voix incorrect.");
 }
 
