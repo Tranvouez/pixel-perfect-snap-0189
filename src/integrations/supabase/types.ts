@@ -14,7 +14,236 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      joueurs: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen: string | null
+          nb_participants: number
+          pseudo: string
+          soiree_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_seen?: string | null
+          nb_participants?: number
+          pseudo: string
+          soiree_id: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen?: string | null
+          nb_participants?: number
+          pseudo?: string
+          soiree_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "joueurs_soiree_id_fkey"
+            columns: ["soiree_id"]
+            isOneToOne: false
+            referencedRelation: "soirees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pools: {
+        Row: {
+          accessible: boolean
+          created_at: string
+          id: string
+          nom: string
+          ordre: number
+          reponses_visibles: boolean
+          soiree_id: string
+        }
+        Insert: {
+          accessible?: boolean
+          created_at?: string
+          id?: string
+          nom: string
+          ordre?: number
+          reponses_visibles?: boolean
+          soiree_id: string
+        }
+        Update: {
+          accessible?: boolean
+          created_at?: string
+          id?: string
+          nom?: string
+          ordre?: number
+          reponses_visibles?: boolean
+          soiree_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pools_soiree_id_fkey"
+            columns: ["soiree_id"]
+            isOneToOne: false
+            referencedRelation: "soirees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reponses: {
+        Row: {
+          choix_faux: boolean
+          choix_joueur_id: string | null
+          id: string
+          joueur_id: string
+          secret_id: string
+          updated_at: string
+        }
+        Insert: {
+          choix_faux?: boolean
+          choix_joueur_id?: string | null
+          id?: string
+          joueur_id: string
+          secret_id: string
+          updated_at?: string
+        }
+        Update: {
+          choix_faux?: boolean
+          choix_joueur_id?: string | null
+          id?: string
+          joueur_id?: string
+          secret_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reponses_choix_joueur_id_fkey"
+            columns: ["choix_joueur_id"]
+            isOneToOne: false
+            referencedRelation: "joueurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reponses_joueur_id_fkey"
+            columns: ["joueur_id"]
+            isOneToOne: false
+            referencedRelation: "joueurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reponses_secret_id_fkey"
+            columns: ["secret_id"]
+            isOneToOne: false
+            referencedRelation: "secrets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      secrets: {
+        Row: {
+          created_at: string
+          est_faux: boolean
+          id: string
+          ordre: number
+          pool_id: string | null
+          proprietaire_id: string | null
+          soiree_id: string
+          texte: string
+        }
+        Insert: {
+          created_at?: string
+          est_faux?: boolean
+          id?: string
+          ordre?: number
+          pool_id?: string | null
+          proprietaire_id?: string | null
+          soiree_id: string
+          texte: string
+        }
+        Update: {
+          created_at?: string
+          est_faux?: boolean
+          id?: string
+          ordre?: number
+          pool_id?: string | null
+          proprietaire_id?: string | null
+          soiree_id?: string
+          texte?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "secrets_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "pools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "secrets_proprietaire_id_fkey"
+            columns: ["proprietaire_id"]
+            isOneToOne: false
+            referencedRelation: "joueurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "secrets_soiree_id_fkey"
+            columns: ["soiree_id"]
+            isOneToOne: false
+            referencedRelation: "soirees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      soiree_sync: {
+        Row: {
+          soiree_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          soiree_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          soiree_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "soiree_sync_soiree_id_fkey"
+            columns: ["soiree_id"]
+            isOneToOne: true
+            referencedRelation: "soirees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      soirees: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          lieu: string
+          nom: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          lieu?: string
+          nom: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          lieu?: string
+          nom?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
