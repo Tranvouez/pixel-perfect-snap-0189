@@ -34,6 +34,22 @@ export const inscrire = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    // Si l'admin a déjà saisi ce nom comme participant invité, le joueur en prend la place
+    // (les secrets associés à ce nom lui restent rattachés, sans doublon dans la liste).
+    const invites = ok(
+      await db().from("joueurs").select("id, token, pseudo").eq("soiree_id", data.soireeId).eq("invite", true),
+    );
+    const cle = data.pseudo.trim().toLocaleLowerCase("fr");
+    const repris = invites.find((i) => i.pseudo.trim().toLocaleLowerCase("fr") === cle);
+    if (repris) {
+      ok(
+        await db()
+          .from("joueurs")
+          .update({ invite: false, nb_participants: data.nb, last_seen: new Date().toISOString() })
+          .eq("id", repris.id),
+      );
+      return { token: repris.token };
+    }
     const j = ok(
       await db()
         .from("joueurs")
@@ -283,7 +299,7 @@ export const adminDonnees = createServerFn({ method: "POST" })
     const joueurs = ok(
       await db()
         .from("joueurs")
-        .select("id, pseudo, nb_participants, last_seen")
+        .select("id, pseudo, nb_participants, last_seen, invite")
         .eq("soiree_id", soiree.id)
         .order("created_at"),
     );
@@ -392,21 +408,18 @@ export const adminSauverSecret = createServerFn({ method: "POST" })
         id: uuid.optional(),
         texte: z.string().trim().min(1).max(500),
         estFaux: z.boolean(),
-        proprietaireId: uuid.nullable(),
+        // Nom saisi librement : la personne n'a pas besoin d'être connectée.
+        proprietaireNom: z.string().trim().max(60).nullable(),
         poolId: uuid.nullable(),
       })
       .parse(d),
   )
   .handler(async ({ data }) => {
     verifierAdmin(data.code);
-    if (!data.estFaux && !data.proprietaireId) throw new Error("Choisissez le propriétaire du vrai secret.");
+    if (!data.estFaux && !data.proprietaireNom) throw new Error("Saisissez le nom du propriétaire du vrai secret.");
     if (data.poolId) {
       const p = ok(await db().from("pools").select("soiree_id").eq("id", data.poolId).maybeSingle());
       if (p?.soiree_id !== data.soireeId) throw new Error("Pool inconnu pour cette soirée.");
-    }
-    if (!data.estFaux && data.proprietaireId) {
-      const j = ok(await db().from("joueurs").select("soiree_id").eq("id", data.proprietaireId).maybeSingle());
-      if (j?.soiree_id !== data.soireeId) throw new Error("Joueur inconnu pour cette soirée.");
     }
     if (data.id) {
       const actuel = ok(
@@ -419,11 +432,32 @@ export const adminSauverSecret = createServerFn({ method: "POST" })
         }
       }
     }
+
+    // Propriétaire : on retrouve le participant du même nom (sans tenir compte de la casse),
+    // sinon on le crée comme participant invité. Il devient alors un choix pour les joueurs.
+    let proprietaireId: string | null = null;
+    if (!data.estFaux && data.proprietaireNom) {
+      const cle = data.proprietaireNom.toLocaleLowerCase("fr");
+      const existants = ok(await db().from("joueurs").select("id, pseudo").eq("soiree_id", data.soireeId));
+      const trouve = existants.find((j) => j.pseudo.trim().toLocaleLowerCase("fr") === cle);
+      if (trouve) proprietaireId = trouve.id;
+      else {
+        const cree = ok(
+          await db()
+            .from("joueurs")
+            .insert({ soiree_id: data.soireeId, pseudo: data.proprietaireNom, invite: true })
+            .select("id")
+            .single(),
+        );
+        proprietaireId = cree.id;
+      }
+    }
+
     const row = {
       soiree_id: data.soireeId,
       texte: data.texte,
       est_faux: data.estFaux,
-      proprietaire_id: data.estFaux ? null : data.proprietaireId,
+      proprietaire_id: proprietaireId,
       pool_id: data.poolId,
     };
     const res = data.id
@@ -438,9 +472,17 @@ export const adminSupprimerSecret = createServerFn({ method: "POST" })
   .inputValidator((d) => adminBase.extend({ soireeId: uuid, id: uuid }).parse(d))
   .handler(async ({ data }) => {
     verifierAdmin(data.code);
-    const reps = ok(await db().from("reponses").select("id").eq("secret_id", data.id).limit(1));
-    if (reps.length) throw new Error("Des joueurs ont déjà répondu à ce secret : suppression impossible.");
+    // Les réponses liées sont supprimées avec le secret (ON DELETE CASCADE).
     ok(await db().from("secrets").delete().eq("id", data.id).eq("soiree_id", data.soireeId));
+    return { ok: true };
+  });
+
+export const adminSupprimerSoiree = createServerFn({ method: "POST" })
+  .inputValidator((d) => adminBase.extend({ soireeId: uuid }).parse(d))
+  .handler(async ({ data }) => {
+    verifierAdmin(data.code);
+    // Supprime en cascade joueurs, pools, secrets et réponses de la soirée.
+    ok(await db().from("soirees").delete().eq("id", data.soireeId));
     return { ok: true };
   });
 
@@ -448,7 +490,7 @@ export const adminAjouterJoueur = createServerFn({ method: "POST" })
   .inputValidator((d) => adminBase.extend({ soireeId: uuid, pseudo: z.string().trim().min(1).max(60) }).parse(d))
   .handler(async ({ data }) => {
     verifierAdmin(data.code);
-    ok(await db().from("joueurs").insert({ soiree_id: data.soireeId, pseudo: data.pseudo }));
+    ok(await db().from("joueurs").insert({ soiree_id: data.soireeId, pseudo: data.pseudo, invite: true }));
     return { ok: true };
   });
 

@@ -12,6 +12,7 @@ import {
   adminSupprimerJoueur,
   adminSupprimerPool,
   adminSupprimerSecret,
+  adminSupprimerSoiree,
 } from "@/lib/game.functions";
 import { pct, statsJoueurPool, statsSecret } from "@/lib/stats";
 import { session } from "@/lib/session";
@@ -35,6 +36,9 @@ type Ctx = {
   d: Donnees;
   agir: (fn: () => Promise<unknown>) => Promise<boolean>;
 };
+
+/** Vrais joueurs (avec téléphone). Les participants « invités » saisis par l'admin n'y sont pas. */
+const reels = (d: Donnees) => d.joueurs.filter((j) => !j.invite);
 
 const ENLIGNE_MS = 60_000;
 const enLigne = (ls: string | null) => !!ls && Date.now() - new Date(ls).getTime() < ENLIGNE_MS;
@@ -99,6 +103,23 @@ function TableauDeBord() {
     } catch (e) {
       setErreur(e instanceof Error ? e.message : "Une erreur est survenue.");
       return false;
+    }
+  };
+
+  const supprimerSoiree = async () => {
+    const nom = liste.find((s) => s.id === soireeId)?.nom ?? "cette soirée";
+    if (
+      !soireeId ||
+      !window.confirm(
+        `Supprimer définitivement « ${nom} » ?\nTous les joueurs, pools, secrets et réponses seront effacés.`,
+      )
+    )
+      return;
+    if (await agir(() => adminSupprimerSoiree({ data: { code: code!, soireeId } }))) {
+      session.setAdminSoiree(null);
+      setSoireeSel(null);
+      setDetail(null);
+      await qc.invalidateQueries({ queryKey: ["admin-soirees"] });
     }
   };
 
@@ -210,6 +231,14 @@ function TableauDeBord() {
             {onglet === "secrets" && (
               <OngletSecrets ctx={ctx} onOpen={setFormSecret} onNew={() => setFormSecret("new")} />
             )}
+
+            <button
+              type="button"
+              onClick={supprimerSoiree}
+              className="h-12 w-full rounded-xl border border-destructive/50 text-sm text-destructive"
+            >
+              Supprimer cette soirée
+            </button>
           </>
         )}
       </div>
@@ -221,7 +250,8 @@ function TableauDeBord() {
 
 function Resume({ ctx }: { ctx: Ctx }) {
   const { d } = ctx;
-  const enLigneN = d.joueurs.filter((j) => enLigne(j.last_seen)).length;
+  const vrais = reels(d);
+  const enLigneN = vrais.filter((j) => enLigne(j.last_seen)).length;
   return (
     <Card className="glow-top">
       <div className="flex items-start justify-between">
@@ -237,7 +267,7 @@ function Resume({ ctx }: { ctx: Ctx }) {
         <div>
           <p className="font-display text-2xl">
             {enLigneN}
-            <span className="text-base text-muted-foreground">/{d.joueurs.length}</span>
+            <span className="text-base text-muted-foreground">/{vrais.length}</span>
           </p>
           <p className="eyebrow mt-1">En ligne</p>
         </div>
@@ -282,10 +312,42 @@ function Visibilite({ ctx, pool }: { ctx: Ctx; pool: Donnees["pools"][number] })
   );
 }
 
+/* ---------- Afficher / Cacher les réponses (révélations du pool) ---------- */
+
+function BoutonReponses({ ctx, pool }: { ctx: Ctx; pool: Donnees["pools"][number] }) {
+  // Afficher les réponses rend aussi le pool visible si nécessaire (sinon les joueurs n'y accèdent pas).
+  const regler = (v: boolean) =>
+    ctx.agir(() =>
+      adminSauverPool({
+        data: {
+          code: ctx.code,
+          soireeId: ctx.soireeId,
+          id: pool.id,
+          reponsesVisibles: v,
+          ...(v ? { accessible: true } : {}),
+        },
+      }),
+    );
+  return pool.reponses_visibles ? (
+    <button type="button" onClick={() => regler(false)} className={`${bouton} w-full`}>
+      Cacher les réponses
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={() => regler(true)}
+      className="h-12 w-full rounded-xl bg-accent text-sm font-semibold text-accent-foreground"
+    >
+      Afficher les réponses
+    </button>
+  );
+}
+
 /* ---------- Onglet Pools ---------- */
 
 function OngletPools({ ctx, onOpen, onNew }: { ctx: Ctx; onOpen: (id: string) => void; onNew: () => void }) {
   const { d } = ctx;
+  const nbJoueurs = reels(d).length;
   return (
     <div className="space-y-2">
       {d.pools.length === 0 && (
@@ -299,7 +361,7 @@ function OngletPools({ ctx, onOpen, onNew }: { ctx: Ctx; onOpen: (id: string) =>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{p.nom}</p>
                 <p className="text-xs text-muted-foreground">
-                  {d.joueurs.length} joueur{d.joueurs.length > 1 ? "s" : ""} · {nbSecrets} secret
+                  {nbJoueurs} joueur{nbJoueurs > 1 ? "s" : ""} · {nbSecrets} secret
                   {nbSecrets > 1 ? "s" : ""}
                 </p>
               </div>
@@ -312,6 +374,10 @@ function OngletPools({ ctx, onOpen, onNew }: { ctx: Ctx; onOpen: (id: string) =>
               </span>
             </button>
             <Visibilite ctx={ctx} pool={p} />
+            <div>
+              <p className="eyebrow mb-2">Révélations : {p.reponses_visibles ? "disponibles" : "masquées"}</p>
+              <BoutonReponses ctx={ctx} pool={p} />
+            </div>
           </Card>
         );
       })}
@@ -420,15 +486,11 @@ function PoolDetail({
   const secrets = d.secrets.filter((s) => s.pool_id === poolId);
   const ids = new Set(secrets.map((s) => s.id));
   const reps = d.reponses.filter((r) => ids.has(r.secret_id));
-  const nbJ = d.joueurs.length;
+  const nbJ = reels(d).length;
   const possible = secrets.length * nbJ;
   const justesTotal = secrets.reduce((n, s) => n + statsSecret(s, reps).justes, 0);
   const progression = pct(reps.length, possible);
 
-  const revelations = (v: boolean) =>
-    ctx.agir(() =>
-      adminSauverPool({ data: { code: ctx.code, soireeId: ctx.soireeId, id: poolId, reponsesVisibles: v } }),
-    );
   const supprimer = async () => {
     if (!window.confirm(`Supprimer le pool « ${pool.nom} » ? Ses secrets seront conservés sans pool.`)) return;
     if (await ctx.agir(() => adminSupprimerPool({ data: { code: ctx.code, soireeId: ctx.soireeId, id: poolId } }))) {
@@ -487,26 +549,11 @@ function PoolDetail({
         <div>
           <p className="eyebrow">Révélations : {pool.reponses_visibles ? "disponibles" : "masquées"}</p>
           <div className="mt-2">
-            {pool.reponses_visibles ? (
-              <button type="button" onClick={() => revelations(false)} className={`${bouton} w-full`}>
-                Cacher les réponses
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={!pool.accessible}
-                onClick={() => revelations(true)}
-                className="h-12 w-full rounded-xl bg-accent text-sm font-semibold text-accent-foreground disabled:opacity-40"
-              >
-                Afficher les réponses
-              </button>
-            )}
+            <BoutonReponses ctx={ctx} pool={pool} />
           </div>
-          {!pool.accessible && !pool.reponses_visibles && (
-            <p className="mt-2 text-xs text-muted-foreground">Rendez d'abord le pool visible.</p>
-          )}
           <p className="mt-2 text-xs text-muted-foreground">
             Chaque joueur navigue ensuite librement dans les secrets : aucune position n'est imposée.
+            {!pool.accessible && !pool.reponses_visibles && " Le pool sera aussi rendu visible."}
           </p>
         </div>
 
@@ -596,7 +643,9 @@ function SecretForm({ ctx, secretId, onClose }: { ctx: Ctx; secretId: string | n
   const s = secretId ? d.secrets.find((x) => x.id === secretId) : null;
   const [texte, setTexte] = useState(s?.texte ?? "");
   const [estFaux, setEstFaux] = useState(s?.est_faux ?? false);
-  const [proprietaire, setProprietaire] = useState<string>(s?.proprietaire_id ?? "");
+  const [proprietaire, setProprietaire] = useState<string>(
+    d.joueurs.find((j) => j.id === s?.proprietaire_id)?.pseudo ?? "",
+  );
   const [poolId, setPoolId] = useState<string>(s?.pool_id ?? "");
 
   const enregistrer = async () => {
@@ -609,7 +658,7 @@ function SecretForm({ ctx, secretId, onClose }: { ctx: Ctx; secretId: string | n
           id: s?.id,
           texte: texte.trim(),
           estFaux,
-          proprietaireId: estFaux ? null : proprietaire || null,
+          proprietaireNom: estFaux ? null : proprietaire.trim() || null,
           poolId: poolId || null,
         },
       }),
@@ -617,7 +666,10 @@ function SecretForm({ ctx, secretId, onClose }: { ctx: Ctx; secretId: string | n
     if (ok) onClose();
   };
   const supprimer = async () => {
-    if (!s || !window.confirm("Supprimer ce secret ?")) return;
+    if (!s) return;
+    const nb = d.reponses.filter((r) => r.secret_id === s.id).length;
+    const avert = nb ? `\n${nb} réponse${nb > 1 ? "s" : ""} de joueurs ${nb > 1 ? "seront supprimées" : "sera supprimée"} avec lui.` : "";
+    if (!window.confirm(`Supprimer ce secret ?${avert}`)) return;
     const ok = await ctx.agir(() =>
       adminSupprimerSecret({ data: { code: ctx.code, soireeId: ctx.soireeId, id: s.id } }),
     );
@@ -652,15 +704,22 @@ function SecretForm({ ctx, secretId, onClose }: { ctx: Ctx; secretId: string | n
 
       {!estFaux && (
         <div>
-          <p className="eyebrow">Propriétaire</p>
-          <select value={proprietaire} onChange={(e) => setProprietaire(e.target.value)} className={`${champ} mt-2`}>
-            <option value="">— Choisir un joueur —</option>
+          <p className="eyebrow">Propriétaire (saisissez le nom que vous voulez)</p>
+          <input
+            list="participants-soiree"
+            value={proprietaire}
+            onChange={(e) => setProprietaire(e.target.value)}
+            placeholder="Ex. Thomas"
+            className={`${champ} mt-2`}
+          />
+          <datalist id="participants-soiree">
             {d.joueurs.map((j) => (
-              <option key={j.id} value={j.id}>
-                {j.pseudo}
-              </option>
+              <option key={j.id} value={j.pseudo} />
             ))}
-          </select>
+          </datalist>
+          <p className="mt-2 text-xs text-muted-foreground">
+            La personne n'a pas besoin d'être connectée : son nom sera proposé aux joueurs parmi les participants.
+          </p>
         </div>
       )}
 
@@ -697,12 +756,14 @@ function SecretForm({ ctx, secretId, onClose }: { ctx: Ctx; secretId: string | n
 
 function OngletJoueurs({ ctx }: { ctx: Ctx }) {
   const { d } = ctx;
+  const vrais = reels(d);
+  const invites = d.joueurs.filter((j) => j.invite);
   const [pseudo, setPseudo] = useState("");
   const poolsAvecSecrets = d.pools
     .map((p) => ({ p, secrets: d.secrets.filter((s) => s.pool_id === p.id) }))
     .filter((x) => x.secrets.length > 0);
-  const enLigneJ = d.joueurs.filter((j) => enLigne(j.last_seen));
-  const tries = [...d.joueurs].sort(
+  const enLigneJ = vrais.filter((j) => enLigne(j.last_seen));
+  const tries = [...vrais].sort(
     (a, b) => Number(enLigne(b.last_seen)) - Number(enLigne(a.last_seen)) || a.pseudo.localeCompare(b.pseudo),
   );
 
@@ -716,7 +777,7 @@ function OngletJoueurs({ ctx }: { ctx: Ctx }) {
   return (
     <div className="space-y-4">
       <p className="eyebrow">
-        {d.joueurs.length} téléphones · {d.joueurs.reduce((n, j) => n + j.nb_participants, 0)} participants ·{" "}
+        {vrais.length} téléphones · {vrais.reduce((n, j) => n + j.nb_participants, 0)} participants ·{" "}
         {enLigneJ.length} en ligne
       </p>
 
@@ -798,17 +859,44 @@ function OngletJoueurs({ ctx }: { ctx: Ctx }) {
         })}
       </div>
 
-      <div className="flex gap-2">
-        <input
-          value={pseudo}
-          onChange={(e) => setPseudo(e.target.value)}
-          placeholder="Ajouter un joueur"
-          className={champ}
-        />
-        <button type="button" onClick={ajouter} className={`${bouton} shrink-0`}>
-          Ajouter
-        </button>
-      </div>
+      <Card className="space-y-3">
+        <p className="eyebrow">Participants invités (sans téléphone)</p>
+        <p className="text-xs text-muted-foreground">
+          Noms proposés aux joueurs, sans être connectés. Ils sont aussi créés automatiquement quand vous saisissez un
+          propriétaire de secret.
+        </p>
+        {invites.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {invites.map((j) => (
+              <span key={j.id} className="flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1.5 text-xs">
+                {j.pseudo}
+                <button
+                  type="button"
+                  aria-label={`Retirer ${j.pseudo}`}
+                  onClick={() =>
+                    window.confirm(`Retirer ${j.pseudo} ? Les secrets qui lui sont associés n'auront plus de propriétaire.`) &&
+                    ctx.agir(() => adminSupprimerJoueur({ data: { code: ctx.code, soireeId: ctx.soireeId, id: j.id } }))
+                  }
+                  className="text-muted-foreground"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <input
+            value={pseudo}
+            onChange={(e) => setPseudo(e.target.value)}
+            placeholder="Ajouter un participant"
+            className={champ}
+          />
+          <button type="button" onClick={ajouter} className={`${bouton} shrink-0`}>
+            Ajouter
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }
