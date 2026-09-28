@@ -57,7 +57,7 @@ function Accueil() {
 
       <div className="mt-10">
         <label htmlFor="code-soiree" className="eyebrow block">
-          La maison des secrets est bien gardée. 
+         La maison des secrets est bien gardée, mais depuis quand cela existe-t-il, au fait ? 
         </label>
 
         <input
