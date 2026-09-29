@@ -11,7 +11,7 @@ export const Route = createFileRoute("/admin/")({
       { title: "La voix " },
       {
         name: "description",
-        content: "Espace réservé à la voix.",
+        content: "Espace réservé à la Voix.",
       },
     ],
   }),
