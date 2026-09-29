@@ -22,6 +22,13 @@
       "when": 1790802802399,
       "tag": "0002_participants_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790705175114,
+      "tag": "0003_ajout_invite_et_proprietaire_nom",
+      "breakpoints": true
     }
   ]
 }
