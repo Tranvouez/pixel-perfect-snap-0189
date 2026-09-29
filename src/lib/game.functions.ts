@@ -24,7 +24,7 @@ function ok<T>(res: { data: T; error: { message: string; code?: string } | null 
     }
     throw new Error(res.error.message);
   }
-  return res.data;
+  return res.data as NonNullable<T>;
 }
 
 /* ============================ JOUEUR ============================ */
