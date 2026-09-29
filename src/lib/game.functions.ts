@@ -488,6 +488,24 @@ export const adminSupprimerSoiree = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const adminAjouterJoueur = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    adminBase.extend({ soireeId: uuid, pseudo: z.string().trim().min(1).max(60) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    verifierAdmin(data.code);
+    // Participant « invité » : nom saisi par l'admin, sans téléphone connecté.
+    const existants = ok(
+      await db().from("joueurs").select("id, pseudo").eq("soiree_id", data.soireeId),
+    );
+    const cle = data.pseudo.trim().toLocaleLowerCase("fr");
+    if (existants.some((j) => j.pseudo.trim().toLocaleLowerCase("fr") === cle)) {
+      throw new Error("Ce nom existe déjà dans la soirée.");
+    }
+    ok(await db().from("joueurs").insert({ soiree_id: data.soireeId, pseudo: data.pseudo, invite: true }));
+    return { ok: true };
+  });
+
 export const adminSupprimerJoueur = createServerFn({ method: "POST" })
   .inputValidator((d) => adminBase.extend({ soireeId: uuid, id: uuid }).parse(d))
   .handler(async ({ data }) => {
