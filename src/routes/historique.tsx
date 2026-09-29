@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { SOIREE, joueur, statsSecret } from "@/lib/demo-data";
 import { Screen, TopBar, Card, BottomNav } from "@/components/app-shell";
-import { AucunPool, Chargement, PoolSelect } from "@/components/pool-select";
-import { useJoueur } from "@/hooks/use-joueur";
-import { historiqueJoueur } from "@/lib/game.functions";
 
 export const Route = createFileRoute("/historique")({
   head: () => ({
@@ -18,61 +16,70 @@ export const Route = createFileRoute("/historique")({
 });
 
 function Historique() {
-  const { token, chargement, pools, pool, choisirPool } = useJoueur();
-  const q = useQuery({
-    queryKey: ["historique", token],
-    enabled: !!token,
-    retry: false,
-    queryFn: () => historiqueJoueur({ data: { token: token! } }),
-  });
-  // Les secrets sont déjà classés par % de bonnes réponses décroissant côté serveur.
-  const courant = q.data?.find((p) => p.id === pool?.id);
+  const [poolId, setPoolId] = useState(SOIREE.pools[0]!.id);
+  const pool = SOIREE.pools.find((p) => p.id === poolId)!;
+  const reveles = pool.secrets.filter((s) => s.revele);
 
   return (
     <Screen className="flex flex-col">
       <TopBar titre="Historique" retour="/" />
       <div className="flex-1 space-y-4 px-5 py-5">
-        {pools.length > 0 && <PoolSelect pools={pools} actif={pool?.id ?? null} onChange={choisirPool} />}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {SOIREE.pools.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setPoolId(p.id)}
+              className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium ${
+                poolId === p.id
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-surface text-muted-foreground"
+              }`}
+            >
+              {p.nom}
+            </button>
+          ))}
+        </div>
 
-        {chargement || (pool && q.isLoading) ? (
-          <Chargement />
-        ) : !pool ? (
-          <AucunPool />
-        ) : !courant?.revele ? (
+        {reveles.length === 0 && (
           <Card className="py-10 text-center text-sm text-muted-foreground">
-            La Voix n'a pas encore rendu les réponses de ce pool disponibles. 🤫
+            Aucun secret révélé dans ce pool pour l'instant.
           </Card>
-        ) : courant.secrets.length === 0 ? (
-          <Card className="py-10 text-center text-sm text-muted-foreground">
-            Aucun secret dans ce pool pour l'instant.
-          </Card>
-        ) : (
-          courant.secrets.map((s, i) => (
+        )}
+
+        {reveles.map((s) => {
+          const st = statsSecret(s);
+          const prop = joueur(s.proprietaireId);
+          return (
             <Card key={s.id}>
-              <div className="flex items-start gap-3">
-                <span className="font-display text-xs text-primary">#{i + 1}</span>
-                <p className="flex-1 text-sm leading-snug">« {s.texte} »</p>
-              </div>
+              <p className="text-sm leading-snug">« {s.texte} »</p>
               <div className="mt-3 flex items-center gap-2">
-                {s.estFaux ? (
-                  <span className="rounded-full bg-accent/15 px-2.5 py-1 text-[11px] text-accent">Faux secret</span>
-                ) : (
+                {prop ? (
                   <span className="rounded-full bg-success/15 px-2.5 py-1 text-[11px] text-success">
-                    {s.proprietaire ?? "—"}
+                    {prop.pseudo}
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-accent/15 px-2.5 py-1 text-[11px] text-accent">
+                    Faux secret
                   </span>
                 )}
-                <span className="ml-auto font-display text-sm text-primary">{s.pourcentage}%</span>
+                <span className="ml-auto font-display text-sm text-primary">
+                  {st.pourcentage}%
+                </span>
               </div>
               <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-full rounded-full bg-primary" style={{ width: `${s.pourcentage}%` }} />
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${st.pourcentage}%` }}
+                />
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                {s.justes} bonne{s.justes > 1 ? "s" : ""} réponse{s.justes > 1 ? "s" : ""} sur {s.reponses}{" "}
-                réponse{s.reponses > 1 ? "s" : ""}
+                {st.justes} bonne{st.justes > 1 ? "s" : ""} réponse{st.justes > 1 ? "s" : ""} sur{" "}
+                {st.total} joueurs
               </p>
             </Card>
-          ))
-        )}
+          );
+        })}
       </div>
       <BottomNav actif="historique" />
     </Screen>

@@ -3,8 +3,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import logo from "@/assets/logo-secret-story.png.asset.json";
 import { Screen, PrimaryAction } from "@/components/app-shell";
-import { verifierCode } from "@/lib/game.functions";
-import { session } from "@/lib/session";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,29 +29,16 @@ function Accueil() {
   const [code, setCode] = useState("");
   const [erreur, setErreur] = useState("");
 
-  const rejoindre = async () => {
-    if (!code) {
-      setErreur("Code de soirée incorrect.");
+  const rejoindre = () => {
+    if (code === "2007") {
+      setErreur("");
+
+      // Le code est valide : accès à la page suivante
+      navigate({ to: "/rejoindre" });
       return;
     }
-    try {
-      const { soireeId } = await verifierCode({ data: { code } });
-      if (!soireeId) {
-        setErreur("Code de soirée incorrect.");
-        return;
-      }
-      setErreur("");
-      // Nouvelle soirée : on oublie l'ancienne inscription et l'ancien pool.
-      if (session.soiree() !== soireeId) {
-        session.setToken(null);
-        session.setPool(null);
-      }
-      session.setSoiree(soireeId);
-      // Déjà inscrit sur ce téléphone : retour direct au jeu, sans doublon de joueur.
-      navigate({ to: session.token() ? "/jeu" : "/rejoindre" });
-    } catch {
-      setErreur("Connexion impossible, réessayez.");
-    }
+
+    setErreur("Code de soirée incorrect.");
   };
 
   return (

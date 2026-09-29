@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { Screen, TopBar, PrimaryAction } from "@/components/app-shell";
-import { inscrire } from "@/lib/game.functions";
-import { session } from "@/lib/session";
 
 export const Route = createFileRoute("/rejoindre")({
   head: () => ({
@@ -26,31 +23,6 @@ export const Route = createFileRoute("/rejoindre")({
 function Rejoindre() {
   const [pseudo, setPseudo] = useState("");
   const [nb, setNb] = useState(1);
-  const [erreur, setErreur] = useState("");
-  const [envoi, setEnvoi] = useState(false);
-  const navigate = useNavigate();
-
-  // Sans code de soirée valide, retour à l'accueil.
-  useEffect(() => {
-    if (!session.soiree()) navigate({ to: "/" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const entrer = async () => {
-    const soireeId = session.soiree();
-    if (!soireeId) return navigate({ to: "/" });
-    if (!pseudo.trim()) return setErreur("Entrez votre prénom pour continuer.");
-    setEnvoi(true);
-    try {
-      const { token } = await inscrire({ data: { soireeId, pseudo: pseudo.trim(), nb } });
-      session.setToken(token);
-      session.setPool(null);
-      navigate({ to: "/jeu" });
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Inscription impossible, réessayez.");
-      setEnvoi(false);
-    }
-  };
 
   return (
     <Screen className="flex flex-col">
@@ -66,10 +38,7 @@ function Rejoindre() {
         <input
           id="pseudo"
           value={pseudo}
-          onChange={(e) => {
-            setPseudo(e.target.value);
-            setErreur("");
-          }}
+          onChange={(e) => setPseudo(e.target.value)}
           className="mt-2 h-14 w-full rounded-xl border border-input bg-surface px-4 text-base outline-none focus:border-primary"
         />
 
@@ -105,8 +74,7 @@ function Rejoindre() {
         </div>
 
         <div className="mt-auto pt-8">
-          {erreur && <p className="mb-3 text-center text-sm text-destructive">{erreur}</p>}
-          <PrimaryAction onClick={envoi ? undefined : entrer}>
+          <PrimaryAction to="/jeu">
             Entrer dans la soirée
           </PrimaryAction>
         </div>
