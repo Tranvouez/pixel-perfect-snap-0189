@@ -14,7 +14,7 @@ import {
 const uuid = z.string().uuid();
 const tokenSchema = z.object({ token: uuid });
 
-function ok<T>(res: { data: T; error: { message: string; code?: string } | null }): T {
+function ok<T>(res: { data: T; error: { message: string; code?: string } | null }): NonNullable<T> {
   if (res.error) {
     // 42703 = colonne absente, 42P01 = table absente : la base n'est pas à jour.
     if (res.error.code === "42703" || res.error.code === "42P01") {
@@ -24,7 +24,7 @@ function ok<T>(res: { data: T; error: { message: string; code?: string } | null 
     }
     throw new Error(res.error.message);
   }
-  return res.data;
+  return res.data as NonNullable<T>;
 }
 
 /* ============================ JOUEUR ============================ */
@@ -485,6 +485,24 @@ export const adminSupprimerSoiree = createServerFn({ method: "POST" })
     verifierAdmin(data.code);
     // Supprime en cascade joueurs, pools, secrets et réponses de la soirée.
     ok(await db().from("soirees").delete().eq("id", data.soireeId));
+    return { ok: true };
+  });
+
+export const adminAjouterJoueur = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    adminBase.extend({ soireeId: uuid, pseudo: z.string().trim().min(1).max(60) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    verifierAdmin(data.code);
+    // Participant « invité » : nom saisi par l'admin, sans téléphone connecté.
+    const existants = ok(
+      await db().from("joueurs").select("id, pseudo").eq("soiree_id", data.soireeId),
+    );
+    const cle = data.pseudo.trim().toLocaleLowerCase("fr");
+    if (existants.some((j) => j.pseudo.trim().toLocaleLowerCase("fr") === cle)) {
+      throw new Error("Ce nom existe déjà dans la soirée.");
+    }
+    ok(await db().from("joueurs").insert({ soiree_id: data.soireeId, pseudo: data.pseudo, invite: true }));
     return { ok: true };
   });
 

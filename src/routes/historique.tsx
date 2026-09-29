@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar, Card, BottomNav } from "@/components/app-shell";
-import { AucunPool, Chargement, ErreurChargement, PoolSelect } from "@/components/pool-select";
+import { AucunPool, Chargement, PoolSelect } from "@/components/pool-select";
 import { useJoueur } from "@/hooks/use-joueur";
 import { historiqueJoueur } from "@/lib/game.functions";
 
@@ -38,8 +38,6 @@ function Historique() {
           <Chargement />
         ) : !pool ? (
           <AucunPool />
-        ) : q.error ? (
-          <ErreurChargement erreur={q.error} onRetry={() => q.refetch()} />
         ) : !courant?.revele ? (
           <Card className="py-10 text-center text-sm text-muted-foreground">
             La Voix n'a pas encore rendu les réponses de ce pool disponibles. 🤫

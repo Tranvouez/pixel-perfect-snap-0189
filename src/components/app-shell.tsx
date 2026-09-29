@@ -59,7 +59,7 @@ export function PrimaryAction({
 }: {
   children: ReactNode;
   to?: string;
-  onClick?: () => void;
+  onClick?: (() => void) | (() => Promise<void>) | undefined;
   variant?: "primary" | "accent" | "ghost";
 }) {
   const base =

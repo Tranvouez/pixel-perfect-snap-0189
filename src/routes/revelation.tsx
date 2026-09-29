@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar, Card, BottomNav } from "@/components/app-shell";
-import { AucunPool, Chargement, ErreurChargement, PoolSelect } from "@/components/pool-select";
+import { AucunPool, Chargement, PoolSelect } from "@/components/pool-select";
 import { useJoueur } from "@/hooks/use-joueur";
 import { revelationPool } from "@/lib/game.functions";
 import { revelationIndex } from "@/lib/session";
@@ -91,8 +91,6 @@ function Revelation() {
           <Chargement />
         ) : !pool ? (
           <AucunPool />
-        ) : q.error ? (
-          <ErreurChargement erreur={q.error} onRetry={() => q.refetch()} />
         ) : !d?.disponible ? (
           <Card className="animate-reveal border-accent/40 py-12 text-center">
             <p className="font-display text-xl leading-snug">{messageVoix(pool.id)[0]}</p>

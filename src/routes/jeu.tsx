@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Screen, TopBar, Card, BottomNav } from "@/components/app-shell";
-import { AucunPool, Chargement, ErreurChargement, PoolSelect } from "@/components/pool-select";
+import { AucunPool, Chargement, PoolSelect } from "@/components/pool-select";
 import { useJoueur } from "@/hooks/use-joueur";
 import { poolJoueur, repondre } from "@/lib/game.functions";
 import { FAUX } from "@/lib/stats";
@@ -114,7 +114,7 @@ function EcranJoueur() {
         {!pool ? (
           <AucunPool />
         ) : !d ? (
-          q.error ? <ErreurChargement erreur={q.error} onRetry={() => q.refetch()} /> : <Chargement />
+          <Chargement />
         ) : (
           <>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -149,7 +149,7 @@ function EcranJoueur() {
             ) : (
               <>
                 <Card>
-                  <p className="eyebrow">Les personnes</p>
+                  <p className="eyebrow">Les participants</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {participants.map((j) => (
                       <span key={j.id} className="rounded-full bg-surface-2 px-3 py-1.5 text-xs font-medium">
@@ -158,7 +158,7 @@ function EcranJoueur() {
                     ))}
                     {participants.length === 0 && (
                       <span className="text-xs text-muted-foreground">
-                        Aucun nom à associer dans ce pool pour l'instant.
+                        Personne d'autre n'a encore rejoint la soirée.
                       </span>
                     )}
                   </div>

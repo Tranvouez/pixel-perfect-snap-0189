@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Screen, TopBar, Card } from "@/components/app-shell";
 import { useSync } from "@/hooks/use-sync";
 import {
+  adminAjouterJoueur,
   adminDonnees,
   adminLogin,
   adminSauverPool,
@@ -36,11 +37,8 @@ type Ctx = {
   agir: (fn: () => Promise<unknown>) => Promise<boolean>;
 };
 
-/** Noms des propriétaires de secrets (saisis librement, sans lien avec les joueurs connectés). */
-const nomsProprietaires = (d: Donnees) =>
-  [...new Set(d.secrets.filter((s) => !s.est_faux && s.proprietaire_nom).map((s) => s.proprietaire_nom!.trim()))].sort(
-    (a, b) => a.localeCompare(b, "fr"),
-  );
+/** Vrais joueurs (avec téléphone). Les participants « invités » saisis par l'admin n'y sont pas. */
+const reels = (d: Donnees) => d.joueurs.filter((j) => !j.invite);
 
 const ENLIGNE_MS = 60_000;
 const enLigne = (ls: string | null) => !!ls && Date.now() - new Date(ls).getTime() < ENLIGNE_MS;
@@ -76,14 +74,13 @@ function TableauDeBord() {
     retry: false,
     queryFn: () => adminLogin({ data: { code: code! } }),
   });
-  const erreurCode = soirees.error instanceof Error && soirees.error.message.includes("incorrect");
   useEffect(() => {
-    if (erreurCode) {
+    if (soirees.error) {
       session.setAdmin(null);
       navigate({ to: "/admin" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [erreurCode]);
+  }, [soirees.error]);
 
   const liste = soirees.data?.soirees ?? [];
   const soireeId = liste.find((s) => s.id === soireeSel)?.id ?? liste[0]?.id ?? null;
@@ -93,7 +90,6 @@ function TableauDeBord() {
     queryKey: ["admin", code, soireeId],
     enabled: !!code && !!soireeId,
     refetchInterval: 15_000,
-    retry: 1,
     queryFn: () => adminDonnees({ data: { code: code!, soireeId: soireeId! } }),
   });
   useSync(soireeId);
@@ -167,12 +163,6 @@ function TableauDeBord() {
           </div>
         )}
 
-        {soirees.error && !erreurCode && (
-          <Card className="border-destructive/50 text-sm text-destructive">
-            Connexion au serveur impossible : {soirees.error instanceof Error ? soirees.error.message : "erreur"}
-          </Card>
-        )}
-
         {soirees.data && liste.length === 0 && (
           <Card className="py-8 text-center">
             <p className="text-sm text-muted-foreground">Aucune soirée pour l'instant.</p>
@@ -192,23 +182,7 @@ function TableauDeBord() {
         )}
 
         {!ctx ? (
-          liste.length > 0 &&
-          (q.error ? (
-            <Card className="space-y-3 border-destructive/50 py-6 text-center">
-              <p className="text-sm text-destructive">Impossible de charger la soirée.</p>
-              <p className="break-words text-xs text-muted-foreground">
-                {q.error instanceof Error ? q.error.message : "Erreur inconnue."}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Si le message parle d'une colonne ou d'une table manquante, appliquez les migrations SQL dans Supabase.
-              </p>
-              <button type="button" onClick={() => q.refetch()} className={bouton}>
-                Réessayer
-              </button>
-            </Card>
-          ) : (
-            <Card className="py-8 text-center text-sm text-muted-foreground">Chargement…</Card>
-          ))
+          liste.length > 0 && <Card className="py-8 text-center text-sm text-muted-foreground">Chargement…</Card>
         ) : formPool ? (
           <PoolForm
             key={formPool}
@@ -276,7 +250,7 @@ function TableauDeBord() {
 
 function Resume({ ctx }: { ctx: Ctx }) {
   const { d } = ctx;
-  const vrais = d.joueurs;
+  const vrais = reels(d);
   const enLigneN = vrais.filter((j) => enLigne(j.last_seen)).length;
   return (
     <Card className="glow-top">
@@ -373,7 +347,7 @@ function BoutonReponses({ ctx, pool }: { ctx: Ctx; pool: Donnees["pools"][number
 
 function OngletPools({ ctx, onOpen, onNew }: { ctx: Ctx; onOpen: (id: string) => void; onNew: () => void }) {
   const { d } = ctx;
-  const nbJoueurs = d.joueurs.length;
+  const nbJoueurs = reels(d).length;
   return (
     <div className="space-y-2">
       {d.pools.length === 0 && (
@@ -423,6 +397,7 @@ function PoolForm({ ctx, poolId, onClose }: { ctx: Ctx; poolId: string | null; o
   const [sel, setSel] = useState<Set<string>>(
     new Set(d.secrets.filter((s) => pool && s.pool_id === pool.id).map((s) => s.id)),
   );
+  const pseudo = (id: string | null) => d.joueurs.find((j) => j.id === id)?.pseudo ?? "?";
   const nomPool = (id: string | null) => d.pools.find((p) => p.id === id)?.nom ?? "un autre pool";
 
   const enregistrer = async () => {
@@ -470,7 +445,7 @@ function PoolForm({ ctx, poolId, onClose }: { ctx: Ctx; poolId: string | null; o
               <span className="flex-1 leading-snug">
                 « {s.texte} »
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  {s.est_faux ? "FAUX SECRET" : (s.proprietaire_nom ?? "?")}
+                  {s.est_faux ? "FAUX SECRET" : pseudo(s.proprietaire_id)}
                   {pris && ` · déjà utilisé (${nomPool(s.pool_id)})`}
                 </span>
               </span>
@@ -511,7 +486,7 @@ function PoolDetail({
   const secrets = d.secrets.filter((s) => s.pool_id === poolId);
   const ids = new Set(secrets.map((s) => s.id));
   const reps = d.reponses.filter((r) => ids.has(r.secret_id));
-  const nbJ = d.joueurs.length;
+  const nbJ = reels(d).length;
   const possible = secrets.length * nbJ;
   const justesTotal = secrets.reduce((n, s) => n + statsSecret(s, reps).justes, 0);
   const progression = pct(reps.length, possible);
@@ -598,7 +573,7 @@ function PoolDetail({
       )}
       {secrets.map((s) => {
         const st = statsSecret(s, reps);
-        const prop = s.proprietaire_nom;
+        const prop = d.joueurs.find((j) => j.id === s.proprietaire_id)?.pseudo;
         return (
           <Card key={s.id} className="space-y-2">
             <p className="text-sm leading-snug">« {s.texte} »</p>
@@ -634,7 +609,7 @@ function OngletSecrets({ ctx, onOpen, onNew }: { ctx: Ctx; onOpen: (id: string) 
         <Card className="py-8 text-center text-sm text-muted-foreground">Aucun secret pour l'instant.</Card>
       )}
       {d.secrets.map((s) => {
-        const prop = s.proprietaire_nom;
+        const prop = d.joueurs.find((j) => j.id === s.proprietaire_id)?.pseudo;
         const pool = d.pools.find((p) => p.id === s.pool_id);
         const st = statsSecret(s, d.reponses);
         return (
@@ -668,7 +643,9 @@ function SecretForm({ ctx, secretId, onClose }: { ctx: Ctx; secretId: string | n
   const s = secretId ? d.secrets.find((x) => x.id === secretId) : null;
   const [texte, setTexte] = useState(s?.texte ?? "");
   const [estFaux, setEstFaux] = useState(s?.est_faux ?? false);
-  const [proprietaire, setProprietaire] = useState<string>(s?.proprietaire_nom ?? "");
+  const [proprietaire, setProprietaire] = useState<string>(
+    d.joueurs.find((j) => j.id === s?.proprietaire_id)?.pseudo ?? "",
+  );
   const [poolId, setPoolId] = useState<string>(s?.pool_id ?? "");
 
   const enregistrer = async () => {
@@ -735,13 +712,13 @@ function SecretForm({ ctx, secretId, onClose }: { ctx: Ctx; secretId: string | n
             placeholder="Ex. Thomas"
             className={`${champ} mt-2`}
           />
-<datalist id="participants-soiree">
-            {nomsProprietaires(d).map((n) => (
-              <option key={n} value={n} />
+          <datalist id="participants-soiree">
+            {d.joueurs.map((j) => (
+              <option key={j.id} value={j.pseudo} />
             ))}
           </datalist>
           <p className="mt-2 text-xs text-muted-foreground">
-            Ce nom est indépendant des joueurs connectés : il sera proposé aux joueurs dans la liste des personnes à associer.
+            La personne n'a pas besoin d'être connectée : son nom sera proposé aux joueurs parmi les participants.
           </p>
         </div>
       )}
@@ -779,7 +756,9 @@ function SecretForm({ ctx, secretId, onClose }: { ctx: Ctx; secretId: string | n
 
 function OngletJoueurs({ ctx }: { ctx: Ctx }) {
   const { d } = ctx;
-  const vrais = d.joueurs;
+  const vrais = reels(d);
+  const invites = d.joueurs.filter((j) => j.invite);
+  const [pseudo, setPseudo] = useState("");
   const poolsAvecSecrets = d.pools
     .map((p) => ({ p, secrets: d.secrets.filter((s) => s.pool_id === p.id) }))
     .filter((x) => x.secrets.length > 0);
@@ -787,6 +766,13 @@ function OngletJoueurs({ ctx }: { ctx: Ctx }) {
   const tries = [...vrais].sort(
     (a, b) => Number(enLigne(b.last_seen)) - Number(enLigne(a.last_seen)) || a.pseudo.localeCompare(b.pseudo),
   );
+
+  const ajouter = async () => {
+    if (!pseudo.trim()) return;
+    if (await ctx.agir(() => adminAjouterJoueur({ data: { code: ctx.code, soireeId: ctx.soireeId, pseudo: pseudo.trim() } }))) {
+      setPseudo("");
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -873,6 +859,44 @@ function OngletJoueurs({ ctx }: { ctx: Ctx }) {
         })}
       </div>
 
+      <Card className="space-y-3">
+        <p className="eyebrow">Participants invités (sans téléphone)</p>
+        <p className="text-xs text-muted-foreground">
+          Noms proposés aux joueurs, sans être connectés. Ils sont aussi créés automatiquement quand vous saisissez un
+          propriétaire de secret.
+        </p>
+        {invites.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {invites.map((j) => (
+              <span key={j.id} className="flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1.5 text-xs">
+                {j.pseudo}
+                <button
+                  type="button"
+                  aria-label={`Retirer ${j.pseudo}`}
+                  onClick={() =>
+                    window.confirm(`Retirer ${j.pseudo} ? Les secrets qui lui sont associés n'auront plus de propriétaire.`) &&
+                    ctx.agir(() => adminSupprimerJoueur({ data: { code: ctx.code, soireeId: ctx.soireeId, id: j.id } }))
+                  }
+                  className="text-muted-foreground"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <input
+            value={pseudo}
+            onChange={(e) => setPseudo(e.target.value)}
+            placeholder="Ajouter un participant"
+            className={champ}
+          />
+          <button type="button" onClick={ajouter} className={`${bouton} shrink-0`}>
+            Ajouter
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }

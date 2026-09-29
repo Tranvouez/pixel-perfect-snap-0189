@@ -25,13 +25,11 @@ CREATE TRIGGER t_secret_coherence
   FOR EACH ROW EXECUTE FUNCTION public.check_secret_coherence();
 
 -- Une réponse est soit "un joueur", soit "faux secret", jamais les deux.
-ALTER TABLE public.reponses DROP CONSTRAINT IF EXISTS reponses_choix_coherent;
 ALTER TABLE public.reponses
   ADD CONSTRAINT reponses_choix_coherent CHECK (NOT (choix_faux AND choix_joueur_id IS NOT NULL));
 
 -- Des révélations ne peuvent être disponibles que sur un pool accessible.
 UPDATE public.pools SET reponses_visibles = false WHERE reponses_visibles AND NOT accessible;
-ALTER TABLE public.pools DROP CONSTRAINT IF EXISTS pools_reponses_need_access;
 ALTER TABLE public.pools
   ADD CONSTRAINT pools_reponses_need_access CHECK (NOT reponses_visibles OR accessible);
 
