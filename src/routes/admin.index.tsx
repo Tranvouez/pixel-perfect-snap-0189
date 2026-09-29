@@ -44,14 +44,6 @@ function AdminConnexion() {
           Ici la voix
         </h1>
 
-        <p className="mt-3 text-sm text-muted-foreground">
-        Un petit code à saisir.
-        </p>
-
-        <label className="eyebrow mt-8 block" htmlFor="code">
-          Code la voix
-        </label>
-
         <input
           id="code"
           type="password"
@@ -86,10 +78,6 @@ function AdminConnexion() {
             Retour
           </PrimaryAction>
         </div>
-
-        <p className="mt-auto pt-10 text-xs text-muted-foreground">
-          Accès réservé à la Voix.
-        </p>
       </div>
     </Screen>
   );
