@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import {
   FAUX,
+  cleNom,
   db,
   joueurParToken,
   poolAccessible,
@@ -13,8 +14,16 @@ import {
 const uuid = z.string().uuid();
 const tokenSchema = z.object({ token: uuid });
 
-function ok<T>(res: { data: T; error: { message: string } | null }): T {
-  if (res.error) throw new Error(res.error.message);
+function ok<T>(res: { data: T; error: { message: string; code?: string } | null }): T {
+  if (res.error) {
+    // 42703 = colonne absente, 42P01 = table absente : la base n'est pas à jour.
+    if (res.error.code === "42703" || res.error.code === "42P01") {
+      throw new Error(
+        `Base de données non à jour : exécutez les migrations SQL (0001 et 0002) dans Supabase. Détail : ${res.error.message}`,
+      );
+    }
+    throw new Error(res.error.message);
+  }
   return res.data;
 }
 
@@ -34,22 +43,6 @@ export const inscrire = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    // Si l'admin a déjà saisi ce nom comme participant invité, le joueur en prend la place
-    // (les secrets associés à ce nom lui restent rattachés, sans doublon dans la liste).
-    const invites = ok(
-      await db().from("joueurs").select("id, token, pseudo").eq("soiree_id", data.soireeId).eq("invite", true),
-    );
-    const cle = data.pseudo.trim().toLocaleLowerCase("fr");
-    const repris = invites.find((i) => i.pseudo.trim().toLocaleLowerCase("fr") === cle);
-    if (repris) {
-      ok(
-        await db()
-          .from("joueurs")
-          .update({ invite: false, nb_participants: data.nb, last_seen: new Date().toISOString() })
-          .eq("id", repris.id),
-      );
-      return { token: repris.token };
-    }
     const j = ok(
       await db()
         .from("joueurs")
@@ -90,30 +83,31 @@ export const poolJoueur = createServerFn({ method: "POST" })
     const secrets = ok(
       await db()
         .from("secrets")
-        .select("id, texte, est_faux, proprietaire_id")
+        .select("id, texte, est_faux, proprietaire_nom")
         .eq("pool_id", pool.id)
         .order("ordre")
         .order("created_at"),
     );
-    const participants = ok(
-      await db()
-        .from("joueurs")
-        .select("id, pseudo")
-        .eq("soiree_id", moi.soiree_id)
-        .neq("id", moi.id)
-        .order("pseudo"),
-    );
+    // Personnes à associer : noms des propriétaires du pool, triés par ordre alphabétique
+    // (jamais dans l'ordre des secrets). Aucun lien avec les joueurs connectés.
+    const noms = new Map<string, string>();
+    for (const sec of secrets) {
+      if (!sec.est_faux && sec.proprietaire_nom?.trim()) noms.set(cleNom(sec.proprietaire_nom), sec.proprietaire_nom.trim());
+    }
+    const participants = [...noms.values()]
+      .sort((x, y) => x.localeCompare(y, "fr"))
+      .map((n) => ({ id: n, pseudo: n }));
     const reps = secrets.length
       ? ok(
           await db()
             .from("reponses")
-            .select("joueur_id, secret_id, choix_joueur_id, choix_faux")
+            .select("joueur_id, secret_id, choix_nom, choix_faux")
             .eq("joueur_id", moi.id)
             .in("secret_id", secrets.map((s) => s.id)),
         )
       : [];
     const mesReponses: Record<string, string> = {};
-    for (const r of reps) mesReponses[r.secret_id] = r.choix_faux ? FAUX : (r.choix_joueur_id ?? "");
+    for (const r of reps) mesReponses[r.secret_id] = r.choix_faux ? FAUX : (noms.get(cleNom(r.choix_nom)) ?? r.choix_nom ?? "");
     const st = statsJoueurPool(moi.id, secrets, reps);
     return {
       pool: { id: pool.id, nom: pool.nom, reponsesVisibles: pool.reponses_visibles },
@@ -128,7 +122,9 @@ export const poolJoueur = createServerFn({ method: "POST" })
 
 export const repondre = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({ token: uuid, secretId: uuid, choix: z.union([uuid, z.literal(FAUX), z.null()]) }).parse(d),
+    z
+      .object({ token: uuid, secretId: uuid, choix: z.union([z.string().trim().min(1).max(60), z.null()]) })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     const moi = await joueurParToken(data.token);
@@ -144,24 +140,31 @@ export const repondre = createServerFn({ method: "POST" })
       return { ok: true, stats: await statsPoolDuJoueur(moi.id, pool.id) };
     }
     const faux = data.choix === FAUX;
+    let nomChoisi: string | null = null;
     if (!faux) {
-      if (data.choix === moi.id) throw new Error("Impossible de vous désigner vous-même.");
-      const cible = ok(
-        await db().from("joueurs").select("soiree_id").eq("id", data.choix).maybeSingle(),
+      const secretsPool = ok(
+        await db().from("secrets").select("id, est_faux, proprietaire_nom").eq("pool_id", pool.id),
       );
-      if (cible?.soiree_id !== moi.soiree_id) throw new Error("Participant inconnu.");
-      // Un participant ne peut être associé qu'à un seul secret du pool.
-      const ids = ok(await db().from("secrets").select("id").eq("pool_id", pool.id)).map((s) => s.id);
-      const dejaPris = ok(
+      // Le nom doit faire partie des personnes proposées pour ce pool.
+      const canon = secretsPool
+        .filter((x) => !x.est_faux && x.proprietaire_nom?.trim())
+        .map((x) => x.proprietaire_nom!.trim())
+        .find((n) => cleNom(n) === cleNom(data.choix));
+      if (!canon) throw new Error("Personne inconnue pour ce pool.");
+      nomChoisi = canon;
+      // Une personne ne peut être associée qu'à un seul secret du pool.
+      const ids = secretsPool.map((x) => x.id);
+      const miennes = ok(
         await db()
           .from("reponses")
-          .select("secret_id")
+          .select("secret_id, choix_nom")
           .eq("joueur_id", moi.id)
-          .eq("choix_joueur_id", data.choix)
           .in("secret_id", ids)
           .neq("secret_id", secret.id),
       );
-      if (dejaPris.length) throw new Error("Ce participant est déjà associé à un autre secret.");
+      if (miennes.some((r) => cleNom(r.choix_nom) === cleNom(canon))) {
+        throw new Error("Cette personne est déjà associée à un autre secret.");
+      }
     }
     ok(
       await db()
@@ -170,7 +173,8 @@ export const repondre = createServerFn({ method: "POST" })
           {
             joueur_id: moi.id,
             secret_id: secret.id,
-            choix_joueur_id: faux ? null : data.choix,
+            choix_nom: faux ? null : nomChoisi,
+            choix_joueur_id: null,
             choix_faux: faux,
             updated_at: new Date().toISOString(),
           },
@@ -183,13 +187,13 @@ export const repondre = createServerFn({ method: "POST" })
 /** Recalcul serveur des stats d'un joueur sur un pool (la correction ne quitte jamais le serveur). */
 async function statsPoolDuJoueur(joueurId: string, poolId: string) {
   const secrets = ok(
-    await db().from("secrets").select("id, est_faux, proprietaire_id").eq("pool_id", poolId),
+    await db().from("secrets").select("id, est_faux, proprietaire_nom").eq("pool_id", poolId),
   );
   const reps = secrets.length
     ? ok(
         await db()
           .from("reponses")
-          .select("joueur_id, secret_id, choix_joueur_id, choix_faux")
+          .select("joueur_id, secret_id, choix_nom, choix_faux")
           .eq("joueur_id", joueurId)
           .in("secret_id", secrets.map((s) => s.id)),
       )
@@ -202,7 +206,7 @@ async function secretsRevelesDuPool(poolId: string) {
   const secrets = ok(
     await db()
       .from("secrets")
-      .select("id, texte, est_faux, proprietaire_id, proprietaire:joueurs!secrets_proprietaire_id_fkey(pseudo)")
+      .select("id, texte, est_faux, proprietaire_nom")
       .eq("pool_id", poolId)
       .order("ordre")
       .order("created_at"),
@@ -211,7 +215,7 @@ async function secretsRevelesDuPool(poolId: string) {
     ? ok(
         await db()
           .from("reponses")
-          .select("joueur_id, secret_id, choix_joueur_id, choix_faux")
+          .select("joueur_id, secret_id, choix_nom, choix_faux")
           .in("secret_id", secrets.map((s) => s.id)),
       )
     : [];
@@ -219,7 +223,7 @@ async function secretsRevelesDuPool(poolId: string) {
     id: s.id,
     texte: s.texte,
     estFaux: s.est_faux,
-    proprietaire: (s.proprietaire as { pseudo: string } | null)?.pseudo ?? null,
+    proprietaire: s.est_faux ? null : (s.proprietaire_nom?.trim() ?? null),
     ...statsSecret(s, reps),
   }));
 }
@@ -299,7 +303,7 @@ export const adminDonnees = createServerFn({ method: "POST" })
     const joueurs = ok(
       await db()
         .from("joueurs")
-        .select("id, pseudo, nb_participants, last_seen, invite")
+        .select("id, pseudo, nb_participants, last_seen")
         .eq("soiree_id", soiree.id)
         .order("created_at"),
     );
@@ -313,7 +317,7 @@ export const adminDonnees = createServerFn({ method: "POST" })
     const secrets = ok(
       await db()
         .from("secrets")
-        .select("id, texte, est_faux, proprietaire_id, pool_id, ordre")
+        .select("id, texte, est_faux, proprietaire_nom, pool_id, ordre")
         .eq("soiree_id", soiree.id)
         .order("ordre")
         .order("created_at"),
@@ -322,7 +326,7 @@ export const adminDonnees = createServerFn({ method: "POST" })
       ? ok(
           await db()
             .from("reponses")
-            .select("joueur_id, secret_id, choix_joueur_id, choix_faux")
+            .select("joueur_id, secret_id, choix_nom, choix_faux")
             .in("secret_id", secrets.map((s) => s.id)),
         )
       : [];
@@ -379,10 +383,18 @@ export const adminSauverPool = createServerFn({ method: "POST" })
     }
     if (data.secretIds) {
       const cibles = ok(
-        await db().from("secrets").select("id, pool_id").eq("soiree_id", data.soireeId).in("id", data.secretIds),
+        await db()
+          .from("secrets")
+          .select("id, pool_id, est_faux, proprietaire_nom")
+          .eq("soiree_id", data.soireeId)
+          .in("id", data.secretIds),
       );
       if (cibles.some((s) => s.pool_id && s.pool_id !== poolId)) {
         throw new Error("Un des secrets appartient déjà à un autre pool.");
+      }
+      const proprietaires = cibles.filter((s) => !s.est_faux && s.proprietaire_nom).map((s) => cleNom(s.proprietaire_nom));
+      if (new Set(proprietaires).size !== proprietaires.length) {
+        throw new Error("Une même personne ne peut avoir qu'un seul vrai secret par pool.");
       }
       ok(await db().from("secrets").update({ pool_id: null }).eq("pool_id", poolId).not("id", "in", `(${data.secretIds.join(",") || "00000000-0000-0000-0000-000000000000"})`));
       if (data.secretIds.length) {
@@ -408,7 +420,7 @@ export const adminSauverSecret = createServerFn({ method: "POST" })
         id: uuid.optional(),
         texte: z.string().trim().min(1).max(500),
         estFaux: z.boolean(),
-        // Nom saisi librement : la personne n'a pas besoin d'être connectée.
+        // Nom saisi librement : indépendant des joueurs connectés.
         proprietaireNom: z.string().trim().max(60).nullable(),
         poolId: uuid.nullable(),
       })
@@ -416,10 +428,20 @@ export const adminSauverSecret = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     verifierAdmin(data.code);
-    if (!data.estFaux && !data.proprietaireNom) throw new Error("Saisissez le nom du propriétaire du vrai secret.");
+    const nom = data.estFaux ? null : data.proprietaireNom?.trim() || null;
+    if (!data.estFaux && !nom) throw new Error("Saisissez le nom du propriétaire du vrai secret.");
     if (data.poolId) {
       const p = ok(await db().from("pools").select("soiree_id").eq("id", data.poolId).maybeSingle());
       if (p?.soiree_id !== data.soireeId) throw new Error("Pool inconnu pour cette soirée.");
+      if (nom) {
+        // Une personne = un seul vrai secret par pool (sinon impossible de les associer séparément).
+        const memePool = ok(
+          await db().from("secrets").select("id, est_faux, proprietaire_nom").eq("pool_id", data.poolId),
+        );
+        if (memePool.some((x) => x.id !== data.id && !x.est_faux && cleNom(x.proprietaire_nom) === cleNom(nom))) {
+          throw new Error(`${nom} a déjà un vrai secret dans ce pool.`);
+        }
+      }
     }
     if (data.id) {
       const actuel = ok(
@@ -432,32 +454,12 @@ export const adminSauverSecret = createServerFn({ method: "POST" })
         }
       }
     }
-
-    // Propriétaire : on retrouve le participant du même nom (sans tenir compte de la casse),
-    // sinon on le crée comme participant invité. Il devient alors un choix pour les joueurs.
-    let proprietaireId: string | null = null;
-    if (!data.estFaux && data.proprietaireNom) {
-      const cle = data.proprietaireNom.toLocaleLowerCase("fr");
-      const existants = ok(await db().from("joueurs").select("id, pseudo").eq("soiree_id", data.soireeId));
-      const trouve = existants.find((j) => j.pseudo.trim().toLocaleLowerCase("fr") === cle);
-      if (trouve) proprietaireId = trouve.id;
-      else {
-        const cree = ok(
-          await db()
-            .from("joueurs")
-            .insert({ soiree_id: data.soireeId, pseudo: data.proprietaireNom, invite: true })
-            .select("id")
-            .single(),
-        );
-        proprietaireId = cree.id;
-      }
-    }
-
     const row = {
       soiree_id: data.soireeId,
       texte: data.texte,
       est_faux: data.estFaux,
-      proprietaire_id: proprietaireId,
+      proprietaire_nom: nom,
+      proprietaire_id: null,
       pool_id: data.poolId,
     };
     const res = data.id
@@ -483,14 +485,6 @@ export const adminSupprimerSoiree = createServerFn({ method: "POST" })
     verifierAdmin(data.code);
     // Supprime en cascade joueurs, pools, secrets et réponses de la soirée.
     ok(await db().from("soirees").delete().eq("id", data.soireeId));
-    return { ok: true };
-  });
-
-export const adminAjouterJoueur = createServerFn({ method: "POST" })
-  .inputValidator((d) => adminBase.extend({ soireeId: uuid, pseudo: z.string().trim().min(1).max(60) }).parse(d))
-  .handler(async ({ data }) => {
-    verifierAdmin(data.code);
-    ok(await db().from("joueurs").insert({ soiree_id: data.soireeId, pseudo: data.pseudo, invite: true }));
     return { ok: true };
   });
 

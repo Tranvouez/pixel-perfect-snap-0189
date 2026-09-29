@@ -48,3 +48,18 @@ export function AucunPool() {
 export function Chargement() {
   return <Card className="py-10 text-center text-sm text-muted-foreground">Chargement…</Card>;
 }
+
+/** Affiche l'erreur au lieu d'un chargement sans fin. */
+export function ErreurChargement({ erreur, onRetry }: { erreur: unknown; onRetry: () => void }) {
+  return (
+    <Card className="space-y-3 py-8 text-center">
+      <p className="text-sm text-destructive">Impossible de charger les données.</p>
+      <p className="break-words text-xs text-muted-foreground">
+        {erreur instanceof Error ? erreur.message : "Erreur inconnue."}
+      </p>
+      <button type="button" onClick={onRetry} className="h-11 rounded-xl border border-border bg-surface-2 px-4 text-sm">
+        Réessayer
+      </button>
+    </Card>
+  );
+}

@@ -18,7 +18,6 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          invite: boolean
           last_seen: string | null
           nb_participants: number
           pseudo: string
@@ -28,7 +27,6 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          invite?: boolean
           last_seen?: string | null
           nb_participants?: number
           pseudo: string
@@ -38,7 +36,6 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          invite?: boolean
           last_seen?: string | null
           nb_participants?: number
           pseudo?: string
@@ -97,6 +94,7 @@ export type Database = {
         Row: {
           choix_faux: boolean
           choix_joueur_id: string | null
+          choix_nom: string | null
           id: string
           joueur_id: string
           secret_id: string
@@ -105,6 +103,7 @@ export type Database = {
         Insert: {
           choix_faux?: boolean
           choix_joueur_id?: string | null
+          choix_nom?: string | null
           id?: string
           joueur_id: string
           secret_id: string
@@ -113,6 +112,7 @@ export type Database = {
         Update: {
           choix_faux?: boolean
           choix_joueur_id?: string | null
+          choix_nom?: string | null
           id?: string
           joueur_id?: string
           secret_id?: string
@@ -150,6 +150,7 @@ export type Database = {
           ordre: number
           pool_id: string | null
           proprietaire_id: string | null
+          proprietaire_nom: string | null
           soiree_id: string
           texte: string
         }
@@ -160,6 +161,7 @@ export type Database = {
           ordre?: number
           pool_id?: string | null
           proprietaire_id?: string | null
+          proprietaire_nom?: string | null
           soiree_id: string
           texte: string
         }
@@ -170,6 +172,7 @@ export type Database = {
           ordre?: number
           pool_id?: string | null
           proprietaire_id?: string | null
+          proprietaire_nom?: string | null
           soiree_id?: string
           texte?: string
         }

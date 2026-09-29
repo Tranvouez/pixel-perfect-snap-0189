@@ -6,14 +6,21 @@ export const FAUX = "__faux__";
 export type SecretLite = {
   id: string;
   est_faux: boolean;
-  proprietaire_id: string | null;
+  /** Nom saisi librement par l'admin : aucun lien avec les joueurs connectés. */
+  proprietaire_nom: string | null;
 };
 export type ReponseLite = {
   joueur_id: string;
   secret_id: string;
-  choix_joueur_id: string | null;
+  /** Nom choisi par le joueur parmi les personnes proposées. */
+  choix_nom: string | null;
   choix_faux: boolean;
 };
+
+/** Clé de comparaison d'un nom : sans espaces superflus ni différence de casse. */
+export function cleNom(n: string | null | undefined) {
+  return (n ?? "").trim().toLocaleLowerCase("fr");
+}
 
 export function pct(n: number, d: number) {
   return d > 0 ? Math.round((n / d) * 100) : 0;
@@ -21,7 +28,7 @@ export function pct(n: number, d: number) {
 
 export function estJuste(s: SecretLite, r: ReponseLite) {
   if (s.est_faux) return r.choix_faux;
-  return !!s.proprietaire_id && !r.choix_faux && r.choix_joueur_id === s.proprietaire_id;
+  return !!s.proprietaire_nom && !r.choix_faux && !!r.choix_nom && cleNom(r.choix_nom) === cleNom(s.proprietaire_nom);
 }
 
 /** Stats d'un secret : réponses reçues, bonnes réponses, % = bonnes / réponses. */
